@@ -102,7 +102,12 @@ export default function OpsPage() {
       });
       if (!res.ok) {
         const text = await res.text().catch(() => "");
-        throw new Error(`HTTP ${res.status}: ${text}`);
+        try {
+          const parsed = JSON.parse(text) as { error?: string };
+          throw new Error(`HTTP ${res.status}: ${parsed.error ?? text}`);
+        } catch {
+          throw new Error(`HTTP ${res.status}: ${text}`);
+        }
       }
       const data = (await res.json()) as { runs?: RunLog[] };
       setRuns(data.runs ?? []);
@@ -123,7 +128,12 @@ export default function OpsPage() {
       );
       if (!res.ok) {
         const text = await res.text().catch(() => "");
-        throw new Error(`HTTP ${res.status}: ${text}`);
+        try {
+          const parsed = JSON.parse(text) as { error?: string };
+          throw new Error(`HTTP ${res.status}: ${parsed.error ?? text}`);
+        } catch {
+          throw new Error(`HTTP ${res.status}: ${text}`);
+        }
       }
       const data = (await res.json()) as { records?: DraftRecord[] };
       setDrafts(data.records ?? []);
@@ -149,7 +159,12 @@ export default function OpsPage() {
         });
         if (!res.ok) {
           const text = await res.text().catch(() => "");
-          throw new Error(`HTTP ${res.status}: ${text}`);
+          try {
+            const parsed = JSON.parse(text) as { error?: string };
+            throw new Error(`HTTP ${res.status}: ${parsed.error ?? text}`);
+          } catch {
+            throw new Error(`HTTP ${res.status}: ${text}`);
+          }
         }
         await loadDrafts();
       } catch (e) {
@@ -179,7 +194,12 @@ export default function OpsPage() {
       });
       if (!res.ok) {
         const text = await res.text().catch(() => "");
-        throw new Error(`HTTP ${res.status}: ${text}`);
+        try {
+          const parsed = JSON.parse(text) as { error?: string };
+          throw new Error(`HTTP ${res.status}: ${parsed.error ?? text}`);
+        } catch {
+          throw new Error(`HTTP ${res.status}: ${text}`);
+        }
       }
       await loadRuns();
     } catch (e) {

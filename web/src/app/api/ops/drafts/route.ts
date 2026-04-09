@@ -17,18 +17,23 @@ export async function GET(req: Request) {
   const auth = requireOpsAuth(req);
   if (!auth.ok) return auth.error;
 
-  const url = new URL(req.url);
-  const status = asStatus(url.searchParams.get("status"));
-  const limitParam = url.searchParams.get("limit");
-  const offsetParam = url.searchParams.get("offset");
-  const limit = limitParam ? Number(limitParam) : 30;
-  const offset = offsetParam ? Number(offsetParam) : 0;
+  try {
+    const url = new URL(req.url);
+    const status = asStatus(url.searchParams.get("status"));
+    const limitParam = url.searchParams.get("limit");
+    const offsetParam = url.searchParams.get("offset");
+    const limit = limitParam ? Number(limitParam) : 30;
+    const offset = offsetParam ? Number(offsetParam) : 0;
 
-  const records = await listDraftRecords({
-    status,
-    limit: Number.isFinite(limit) ? limit : 30,
-    offset: Number.isFinite(offset) ? offset : 0,
-  });
+    const records = await listDraftRecords({
+      status,
+      limit: Number.isFinite(limit) ? limit : 30,
+      offset: Number.isFinite(offset) ? offset : 0,
+    });
 
-  return NextResponse.json({ count: records.length, records });
+    return NextResponse.json({ count: records.length, records });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

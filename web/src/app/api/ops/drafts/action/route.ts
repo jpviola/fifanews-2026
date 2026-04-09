@@ -21,17 +21,24 @@ export async function POST(req: Request) {
   const auth = requireOpsAuth(req);
   if (!auth.ok) return auth.error;
 
-  const body = (await req.json().catch(() => null)) as Body | null;
-  if (!body?.sourceUrl || typeof body.sourceUrl !== "string") {
-    return NextResponse.json({ error: "Missing sourceUrl" }, { status: 400 });
-  }
+  try {
+    const body = (await req.json().catch(() => null)) as Body | null;
+    if (!body?.sourceUrl || typeof body.sourceUrl !== "string") {
+      return NextResponse.json({ error: "Missing sourceUrl" }, { status: 400 });
+    }
 
-  const status = mapActionToStatus(body.action ?? "draft");
-  const res = await updateDraftStatus({ sourceUrl: body.sourceUrl, status });
-  if (!res.ok) {
-    return NextResponse.json({ error: "No database configured" }, { status: 500 });
-  }
+    const status = mapActionToStatus(body.action ?? "draft");
+    const res = await updateDraftStatus({ sourceUrl: body.sourceUrl, status });
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: "No database configured" },
+        { status: 500 },
+      );
+    }
 
-  return NextResponse.json({ ok: true, status });
+    return NextResponse.json({ ok: true, status });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
-
