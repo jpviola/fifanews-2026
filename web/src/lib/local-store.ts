@@ -17,12 +17,33 @@ function getStorePath() {
 }
 
 function hasDatabase() {
-  return Boolean(process.env.DATABASE_URL);
+  return Boolean(
+    (process.env.DATABASE_URL ?? "").trim() ||
+      (process.env.POSTGRES_URL ?? "").trim() ||
+      (process.env.POSTGRES_PRISMA_URL ?? "").trim() ||
+      (process.env.POSTGRES_URL_NON_POOLING ?? "").trim(),
+  );
 }
 
 try {
   setDefaultResultOrder("ipv4first");
 } catch {
+}
+
+function getDatabaseUrlFromEnv(): { url: string; source: string } {
+  const candidates: Array<{ key: string; value: string }> = [
+    { key: "DATABASE_URL", value: process.env.DATABASE_URL ?? "" },
+    { key: "POSTGRES_URL", value: process.env.POSTGRES_URL ?? "" },
+    { key: "POSTGRES_PRISMA_URL", value: process.env.POSTGRES_PRISMA_URL ?? "" },
+    { key: "POSTGRES_URL_NON_POOLING", value: process.env.POSTGRES_URL_NON_POOLING ?? "" },
+  ];
+
+  for (const c of candidates) {
+    const v = c.value.trim();
+    if (v) return { url: v, source: c.key };
+  }
+
+  return { url: "", source: "DATABASE_URL" };
 }
 
 function lockParts(lockKey: string): [number, number] {
@@ -34,22 +55,28 @@ function lockParts(lockKey: string): [number, number] {
 
 async function getPool(): Promise<Pool> {
   const { Pool } = await import("pg");
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) throw new Error("Missing DATABASE_URL");
+  const { url: databaseUrl, source } = getDatabaseUrlFromEnv();
+  if (!databaseUrl) {
+    throw new Error(
+      "Missing database connection string (set DATABASE_URL or Vercel Supabase integration vars like POSTGRES_URL)",
+    );
+  }
 
   if (!/^postgres(ql)?:\/\//i.test(databaseUrl.trim())) {
-    throw new Error("Invalid DATABASE_URL: expected a postgres:// or postgresql:// connection string");
+    throw new Error(
+      `Invalid ${source}: expected a postgres:// or postgresql:// connection string`,
+    );
   }
 
   let parsed: URL;
   try {
     parsed = new URL(databaseUrl.trim());
   } catch {
-    throw new Error("Invalid DATABASE_URL: could not parse connection string");
+    throw new Error(`Invalid ${source}: could not parse connection string`);
   }
 
   if (!parsed.hostname) {
-    throw new Error("Invalid DATABASE_URL: missing host");
+    throw new Error(`Invalid ${source}: missing host`);
   }
 
   const isLocal =
