@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { generateArticleDraft } from "@/lib/agent";
-import { exaSearchNews, getExaClient } from "@/lib/exa";
-import { getDraftUrlSet, upsertDraftStore } from "@/lib/local-store";
+import { runDailyAutomation } from "@/lib/automation";
 
 type RunBody = {
   websetId?: string;
@@ -15,177 +13,13 @@ type RunBody = {
   force?: boolean;
 };
 
-function asUrl(input: unknown): string | undefined {
-  if (typeof input !== "string") return undefined;
-  if (input.startsWith("http://") || input.startsWith("https://")) return input;
-  return undefined;
-}
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
-}
-
-function getPath(obj: unknown, path: string[]): unknown {
-  let cur: unknown = obj;
-  for (const key of path) {
-    if (!isRecord(cur)) return undefined;
-    cur = cur[key];
-  }
-  return cur;
-}
-
-function extractUrlFromItem(item: unknown): string | undefined {
-  const candidates: unknown[] = [
-    getPath(item, ["properties", "url"]),
-    getPath(item, ["properties", "article", "url"]),
-    getPath(item, ["properties", "article", "canonicalUrl"]),
-    getPath(item, ["url"]),
-    getPath(item, ["id"]),
-  ];
-  for (const c of candidates) {
-    const u = asUrl(c);
-    if (u) return u;
-  }
-  return undefined;
-}
-
-async function runWithConcurrency<T, R>(
-  items: T[],
-  concurrency: number,
-  fn: (item: T, index: number) => Promise<R>,
-) {
-  const results: Array<{ ok: true; value: R } | { ok: false; error: string }> =
-    new Array(items.length);
-  let cursor = 0;
-
-  async function worker() {
-    while (true) {
-      const idx = cursor++;
-      if (idx >= items.length) return;
-      try {
-        const value = await fn(items[idx], idx);
-        results[idx] = { ok: true, value };
-      } catch (e) {
-        const message = e instanceof Error ? e.message : "Unknown error";
-        results[idx] = { ok: false, error: message };
-      }
-    }
-  }
-
-  await Promise.all(
-    Array.from({ length: Math.max(1, concurrency) }, () => worker()),
-  );
-
-  return results;
-}
-
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => null)) as RunBody | null;
-
-  const query = body?.query ?? "mundial 2026 fifa noticias";
-  const count = body?.count ?? 25;
-  const criteria = body?.criteria ?? [
-    { description: "La página es una nota/artículo sobre el Mundial de Fútbol 2026" },
-  ];
-  const concurrency = Math.min(Math.max(body?.concurrency ?? 3, 1), 6);
-  const dryRun = body?.dryRun === true;
-  const onlyNew = body?.onlyNew ?? true;
-  const force = body?.force ?? false;
-
-  const mode = (process.env.EXA_MODE ?? "auto").toLowerCase();
-
-  let uniqueUrls: string[] = [];
-  let dashboardUrl: string | undefined;
-  let websetId: string | undefined;
-  let sourceMode: "websets" | "search" = "search";
-
-  if (mode !== "search") {
-    try {
-      const exa = getExaClient();
-      if (body?.websetId) {
-        websetId = body.websetId;
-      } else {
-        const webset = await exa.websets.create({
-          search: {
-            query,
-            count,
-            criteria,
-            entity: { type: "article" },
-          },
-          enrichments: [],
-        });
-        websetId = webset.id;
-        dashboardUrl = webset.dashboardUrl;
-      }
-
-      await exa.websets.waitUntilIdle(websetId, {
-        timeout: 120000,
-        pollInterval: 2000,
-      });
-
-      const itemsResp = await exa.websets.items.list(websetId, { limit: count });
-      const urls = (itemsResp?.data ?? [])
-        .map(extractUrlFromItem)
-        .filter((u): u is string => Boolean(u));
-
-      uniqueUrls = [...new Set(urls)].slice(0, count);
-      sourceMode = "websets";
-    } catch (e) {
-      const statusCode = isRecord(e) && typeof e.statusCode === "number" ? e.statusCode : undefined;
-      if (mode === "websets" || statusCode !== 401) {
-        const message = e instanceof Error ? e.message : "Unknown error";
-        return NextResponse.json(
-          { error: message, statusCode },
-          { status: statusCode ?? 500 },
-        );
-      }
-    }
+  try {
+    const result = await runDailyAutomation(body ?? {});
+    return NextResponse.json(result);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  if (!uniqueUrls.length) {
-    const results = await exaSearchNews(query, count);
-    uniqueUrls = [...new Set(results.map((r) => r.url))].slice(0, count);
-    sourceMode = "search";
-  }
-
-  const knownUrls = force ? new Set<string>() : await getDraftUrlSet();
-  const urlsToProcess =
-    onlyNew && !force
-      ? uniqueUrls.filter((u) => !knownUrls.has(u))
-      : uniqueUrls;
-
-  const draftResults = await runWithConcurrency(
-    urlsToProcess,
-    concurrency,
-    async (url) => {
-      return await generateArticleDraft({ url });
-    },
-  );
-
-  type Draft = Awaited<ReturnType<typeof generateArticleDraft>>;
-  const drafts = draftResults.reduce<Draft[]>((acc, r) => {
-    if (r.ok) acc.push(r.value);
-    return acc;
-  }, []);
-  const errors = draftResults
-    .map((r, idx) => (r.ok ? null : { url: urlsToProcess[idx], error: r.error }))
-    .filter(Boolean);
-
-  const stored = dryRun ? { count: 0 } : await upsertDraftStore(drafts);
-
-  return NextResponse.json({
-    sourceMode,
-    websetId,
-    dashboardUrl,
-    query,
-    countRequested: count,
-    urlsFound: uniqueUrls.length,
-    urlsToProcess: urlsToProcess.length,
-    draftsGenerated: drafts.length,
-    errors,
-    storedCount: stored.count,
-    dryRun,
-    onlyNew,
-    force,
-  });
 }

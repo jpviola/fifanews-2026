@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import { join } from "path";
+import type { Pool } from "pg";
 
 import type { ArticleDraft } from "@/lib/draft";
 
@@ -13,7 +14,42 @@ function getStorePath() {
   return join(process.cwd(), ".local-data", "drafts.json");
 }
 
-export async function readDraftStore(): Promise<ArticleDraft[]> {
+function hasDatabase() {
+  return Boolean(process.env.DATABASE_URL);
+}
+
+async function getPool(): Promise<Pool> {
+  const { Pool } = await import("pg");
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) throw new Error("Missing DATABASE_URL");
+
+  const g = globalThis as unknown as {
+    __draftsPool?: Pool;
+  };
+
+  if (!g.__draftsPool) {
+    g.__draftsPool = new Pool({ connectionString: databaseUrl });
+  }
+
+  return g.__draftsPool;
+}
+
+async function ensureDb() {
+  const pool = await getPool();
+  await pool.query(`
+    create table if not exists article_drafts (
+      source_url text primary key,
+      slug text unique,
+      section text,
+      draft jsonb not null,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    )
+  `);
+  return pool;
+}
+
+async function readDraftStoreFile(): Promise<ArticleDraft[]> {
   const path = getStorePath();
   try {
     const raw = await readFile(path, "utf8");
@@ -25,13 +61,8 @@ export async function readDraftStore(): Promise<ArticleDraft[]> {
   }
 }
 
-export async function getDraftUrlSet() {
-  const drafts = await readDraftStore();
-  return new Set(drafts.map((d) => d.source.url));
-}
-
-export async function upsertDraftStore(drafts: ArticleDraft[]) {
-  const existing = await readDraftStore();
+async function upsertDraftStoreFile(drafts: ArticleDraft[]) {
+  const existing = await readDraftStoreFile();
   const byUrl = new Map<string, ArticleDraft>();
   for (const d of existing) byUrl.set(d.source.url, d);
   for (const d of drafts) byUrl.set(d.source.url, d);
@@ -53,4 +84,69 @@ export async function upsertDraftStore(drafts: ArticleDraft[]) {
   await writeFile(path, JSON.stringify(payload, null, 2), "utf8");
 
   return { count: merged.length };
+}
+
+async function readDraftStoreDb(): Promise<ArticleDraft[]> {
+  const pool = await ensureDb();
+  const res = await pool.query<{
+    draft: ArticleDraft;
+  }>(`select draft from article_drafts`);
+
+  const drafts = res.rows.map((r) => r.draft);
+  drafts.sort((a, b) => {
+    const aDate = a.source.publishedDate ?? "";
+    const bDate = b.source.publishedDate ?? "";
+    const cmp = bDate.localeCompare(aDate);
+    if (cmp !== 0) return cmp;
+    return b.seo.slug.localeCompare(a.seo.slug);
+  });
+
+  return drafts;
+}
+
+async function upsertDraftStoreDb(drafts: ArticleDraft[]) {
+  const pool = await ensureDb();
+  for (const d of drafts) {
+    await pool.query(
+      `
+      insert into article_drafts (source_url, slug, section, draft, updated_at)
+      values ($1, $2, $3, $4::jsonb, now())
+      on conflict (source_url)
+      do update set
+        slug = excluded.slug,
+        section = excluded.section,
+        draft = excluded.draft,
+        updated_at = now()
+      `,
+      [d.source.url, d.seo.slug, d.section, JSON.stringify(d)],
+    );
+  }
+
+  const countRes = await pool.query<{ count: string }>(
+    "select count(*)::text as count from article_drafts",
+  );
+  return { count: Number(countRes.rows[0]?.count ?? 0) };
+}
+
+export async function readDraftStore(): Promise<ArticleDraft[]> {
+  if (hasDatabase()) return await readDraftStoreDb();
+  return await readDraftStoreFile();
+}
+
+export async function getDraftUrlSet() {
+  if (hasDatabase()) {
+    const pool = await ensureDb();
+    const res = await pool.query<{ source_url: string }>(
+      "select source_url from article_drafts",
+    );
+    return new Set(res.rows.map((r) => r.source_url));
+  }
+
+  const drafts = await readDraftStoreFile();
+  return new Set(drafts.map((d) => d.source.url));
+}
+
+export async function upsertDraftStore(drafts: ArticleDraft[]) {
+  if (hasDatabase()) return await upsertDraftStoreDb(drafts);
+  return await upsertDraftStoreFile(drafts);
 }
