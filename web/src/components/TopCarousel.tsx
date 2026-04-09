@@ -30,6 +30,7 @@ export function TopCarousel({
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const reducedMotionRef = useRef(false);
+  const dragStartXRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -54,11 +55,38 @@ export function TopCarousel({
 
   const safeIndex = clampIndex(index, len);
   const active = safeItems[safeIndex];
+  const canSwipe = len > 1;
 
   return (
     <section
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
+      onKeyDown={(e) => {
+        if (len <= 1) return;
+        if (e.key === "ArrowLeft") setIndex((i) => clampIndex(i - 1, len));
+        if (e.key === "ArrowRight") setIndex((i) => clampIndex(i + 1, len));
+      }}
+      onPointerDown={(e) => {
+        if (!canSwipe) return;
+        dragStartXRef.current = e.clientX;
+      }}
+      onPointerUp={(e) => {
+        if (!canSwipe) return;
+        const startX = dragStartXRef.current;
+        dragStartXRef.current = null;
+        if (startX === null) return;
+        const delta = e.clientX - startX;
+        if (Math.abs(delta) < 50) return;
+        if (delta > 0) setIndex((i) => clampIndex(i - 1, len));
+        else setIndex((i) => clampIndex(i + 1, len));
+      }}
+      onPointerCancel={() => {
+        dragStartXRef.current = null;
+      }}
+      tabIndex={0}
+      role="region"
+      aria-roledescription="Carrusel"
+      aria-label="Top del día"
       className="rounded-3xl border border-zinc-200/70 bg-white/75 shadow-sm backdrop-blur"
     >
       <div className="flex items-center justify-between gap-4 px-5 pt-5">
@@ -93,7 +121,10 @@ export function TopCarousel({
       <div className="px-5 pb-5 pt-4">
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <div className="rounded-2xl border border-zinc-200/70 bg-white/70 p-5">
+            <div
+              key={active.slug}
+              className="fade-up rounded-2xl border border-zinc-200/70 bg-white/70 p-5"
+            >
               <div className="flex items-center justify-between gap-3">
                 <span className="rounded-full bg-zinc-100/80 px-3 py-1 text-xs font-medium text-zinc-700">
                   {active.sectionLabel}

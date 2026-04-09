@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BreakingBanner } from "@/components/BreakingBanner";
 import { FixtureWidget } from "@/components/FixtureWidget";
 import { HotTicker } from "@/components/HotTicker";
 import { NewsCard } from "@/components/NewsCard";
@@ -16,6 +17,7 @@ export default async function Home() {
     .filter((n) => n.section === "ultima-hora")
     .slice(0, 8)
     .map((n) => ({ slug: n.slug, title: n.title }));
+  const breaking = hotItems[0] ?? null;
   const topItems = sorted.slice(0, 6).map((n) => ({
     slug: n.slug,
     title: n.title,
@@ -28,6 +30,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col gap-8">
+      <BreakingBanner item={breaking} />
       <HotTicker items={hotItems} label="ÚLTIMA" />
       <TopCarousel items={topItems} autoplayMs={5500} />
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
