@@ -37,12 +37,22 @@ async function getPool(): Promise<Pool> {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) throw new Error("Missing DATABASE_URL");
 
+  const isLocal =
+    databaseUrl.includes("localhost") ||
+    databaseUrl.includes("127.0.0.1") ||
+    databaseUrl.includes("::1");
+
   const g = globalThis as unknown as {
     __draftsPool?: Pool;
   };
 
   if (!g.__draftsPool) {
-    g.__draftsPool = new Pool({ connectionString: databaseUrl });
+    g.__draftsPool = new Pool({
+      connectionString: databaseUrl,
+      ssl: isLocal ? undefined : { rejectUnauthorized: false },
+      max: 5,
+      connectionTimeoutMillis: 8000,
+    });
   }
 
   return g.__draftsPool;

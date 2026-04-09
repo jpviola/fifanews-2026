@@ -28,7 +28,7 @@ function draftToNewsItem(d: ArticleDraft): NewsItem {
 
 export async function getAllNews(): Promise<NewsItem[]> {
   noStore();
-  const drafts = await readDraftStore();
+  const drafts = await readDraftStore().catch(() => []);
   const fromDrafts = drafts.map(draftToNewsItem);
 
   const bySlug = new Map<string, NewsItem>();
@@ -41,7 +41,7 @@ export async function getAllNews(): Promise<NewsItem[]> {
 
 export async function getNewsBySlug(slug: string): Promise<NewsItem | undefined> {
   noStore();
-  const drafts = await readDraftStore();
+  const drafts = await readDraftStore().catch(() => []);
   const match = drafts.find((d) => d.seo.slug === slug);
   if (match) return draftToNewsItem(match);
   return getSampleNewsBySlug(slug);
@@ -51,13 +51,13 @@ export async function getDraftBySlug(
   slug: string,
 ): Promise<ArticleDraft | undefined> {
   noStore();
-  const drafts = await readDraftStore();
+  const drafts = await readDraftStore().catch(() => []);
   return drafts.find((d) => d.seo.slug === slug);
 }
 
 export async function getNewsBySection(section: string): Promise<NewsItem[]> {
   noStore();
-  const drafts = await readDraftStore();
+  const drafts = await readDraftStore().catch(() => []);
   const fromDrafts = drafts
     .filter((d) => d.section === section)
     .map(draftToNewsItem);
