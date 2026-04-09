@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { runDailyAutomation } from "@/lib/automation";
+import { requireOpsAuth } from "@/lib/ops-auth";
 
 type RunBody = {
   websetId?: string;
@@ -14,6 +15,9 @@ type RunBody = {
 };
 
 export async function POST(req: Request) {
+  const auth = requireOpsAuth(req);
+  if (!auth.ok) return auth.error;
+
   const body = (await req.json().catch(() => null)) as RunBody | null;
   try {
     const result = await runDailyAutomation(body ?? {});
