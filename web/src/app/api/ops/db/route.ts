@@ -3,6 +3,18 @@ import { NextResponse } from "next/server";
 import { requireOpsAuth } from "@/lib/ops-auth";
 import { listRunLogs } from "@/lib/local-store";
 
+function isValidPostgresConnectionString(raw: string): boolean {
+  const trimmed = raw.trim();
+  if (!trimmed) return false;
+  if (!/^postgres(ql)?:\/\//i.test(trimmed)) return false;
+  try {
+    const u = new URL(trimmed);
+    return Boolean(u.hostname);
+  } catch {
+    return false;
+  }
+}
+
 function getDbTarget() {
   const candidates: Array<{ key: string; value: string }> = [
     { key: "DATABASE_URL", value: process.env.DATABASE_URL ?? "" },
@@ -15,10 +27,21 @@ function getDbTarget() {
   let raw = "";
   for (const c of candidates) {
     const v = c.value.trim();
-    if (v) {
+    if (isValidPostgresConnectionString(v)) {
       source = c.key;
       raw = v;
       break;
+    }
+  }
+
+  if (!raw) {
+    for (const c of candidates) {
+      const v = c.value.trim();
+      if (v) {
+        source = c.key;
+        raw = v;
+        break;
+      }
     }
   }
 

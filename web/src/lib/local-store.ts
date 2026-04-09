@@ -16,12 +16,24 @@ function getStorePath() {
   return join(process.cwd(), ".local-data", "drafts.json");
 }
 
+function isValidPostgresConnectionString(raw: string): boolean {
+  const trimmed = raw.trim();
+  if (!trimmed) return false;
+  if (!/^postgres(ql)?:\/\//i.test(trimmed)) return false;
+  try {
+    const u = new URL(trimmed);
+    return Boolean(u.hostname);
+  } catch {
+    return false;
+  }
+}
+
 function hasDatabase() {
   return Boolean(
-    (process.env.DATABASE_URL ?? "").trim() ||
-      (process.env.POSTGRES_URL ?? "").trim() ||
-      (process.env.POSTGRES_PRISMA_URL ?? "").trim() ||
-      (process.env.POSTGRES_URL_NON_POOLING ?? "").trim(),
+    isValidPostgresConnectionString(process.env.DATABASE_URL ?? "") ||
+      isValidPostgresConnectionString(process.env.POSTGRES_URL ?? "") ||
+      isValidPostgresConnectionString(process.env.POSTGRES_PRISMA_URL ?? "") ||
+      isValidPostgresConnectionString(process.env.POSTGRES_URL_NON_POOLING ?? ""),
   );
 }
 
@@ -37,6 +49,11 @@ function getDatabaseUrlFromEnv(): { url: string; source: string } {
     { key: "POSTGRES_PRISMA_URL", value: process.env.POSTGRES_PRISMA_URL ?? "" },
     { key: "POSTGRES_URL_NON_POOLING", value: process.env.POSTGRES_URL_NON_POOLING ?? "" },
   ];
+
+  for (const c of candidates) {
+    const v = c.value.trim();
+    if (isValidPostgresConnectionString(v)) return { url: v, source: c.key };
+  }
 
   for (const c of candidates) {
     const v = c.value.trim();
