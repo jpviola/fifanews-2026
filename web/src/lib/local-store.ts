@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import { createHash } from "crypto";
+import { setDefaultResultOrder } from "dns";
 import { join } from "path";
 import type { Pool } from "pg";
 
@@ -17,6 +18,11 @@ function getStorePath() {
 
 function hasDatabase() {
   return Boolean(process.env.DATABASE_URL);
+}
+
+try {
+  setDefaultResultOrder("ipv4first");
+} catch {
 }
 
 function lockParts(lockKey: string): [number, number] {
