@@ -88,11 +88,24 @@ async function ensureDb() {
       source_url text primary key,
       slug text unique,
       section text,
+      status text not null default 'draft',
+      published_at timestamptz,
+      reviewed_at timestamptz,
       draft jsonb not null,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     )
   `);
+  await pool.query(`alter table article_drafts add column if not exists status text not null default 'draft'`);
+  await pool.query(`alter table article_drafts add column if not exists published_at timestamptz`);
+  await pool.query(`alter table article_drafts add column if not exists reviewed_at timestamptz`);
+
+  await pool.query(
+    `create index if not exists article_drafts_status_idx on article_drafts(status)`,
+  );
+  await pool.query(
+    `create index if not exists article_drafts_published_at_idx on article_drafts(published_at desc)`,
+  );
   return pool;
 }
 
@@ -156,8 +169,8 @@ async function upsertDraftStoreDb(drafts: ArticleDraft[]) {
   for (const d of drafts) {
     await pool.query(
       `
-      insert into article_drafts (source_url, slug, section, draft, updated_at)
-      values ($1, $2, $3, $4::jsonb, now())
+      insert into article_drafts (source_url, slug, section, status, draft, updated_at)
+      values ($1, $2, $3, 'draft', $4::jsonb, now())
       on conflict (source_url)
       do update set
         slug = excluded.slug,
@@ -173,6 +186,137 @@ async function upsertDraftStoreDb(drafts: ArticleDraft[]) {
     "select count(*)::text as count from article_drafts",
   );
   return { count: Number(countRes.rows[0]?.count ?? 0) };
+}
+
+export type DraftStatus = "draft" | "approved" | "published" | "rejected";
+
+export type DraftRecord = {
+  sourceUrl: string;
+  slug: string;
+  section: string;
+  status: DraftStatus;
+  publishedAtIso?: string;
+  reviewedAtIso?: string;
+  createdAtIso: string;
+  updatedAtIso: string;
+  draft: ArticleDraft;
+};
+
+export async function listDraftRecords(params?: {
+  status?: DraftStatus;
+  limit?: number;
+  offset?: number;
+}): Promise<DraftRecord[]> {
+  if (!hasDatabase()) {
+    const drafts = await readDraftStoreFile();
+    return drafts.map((d) => ({
+      sourceUrl: d.source.url,
+      slug: d.seo.slug,
+      section: d.section,
+      status: "published",
+      createdAtIso: new Date().toISOString(),
+      updatedAtIso: new Date().toISOString(),
+      publishedAtIso: d.source.publishedDate,
+      draft: d,
+    }));
+  }
+
+  const pool = await ensureDb();
+  const limit = Math.min(Math.max(params?.limit ?? 30, 1), 200);
+  const offset = Math.max(params?.offset ?? 0, 0);
+
+  const where = params?.status ? "where status = $3" : "";
+  const values = params?.status
+    ? [limit, offset, params.status]
+    : [limit, offset];
+
+  const res = await pool.query<{
+    source_url: string;
+    slug: string;
+    section: string | null;
+    status: string;
+    published_at: string | null;
+    reviewed_at: string | null;
+    created_at: string;
+    updated_at: string;
+    draft: ArticleDraft;
+  }>(
+    `
+    select
+      source_url,
+      slug,
+      section,
+      status,
+      published_at,
+      reviewed_at,
+      created_at,
+      updated_at,
+      draft
+    from article_drafts
+    ${where}
+    order by coalesce(published_at, updated_at) desc
+    limit $1
+    offset $2
+    `,
+    values,
+  );
+
+  return res.rows.map((r) => ({
+    sourceUrl: r.source_url,
+    slug: r.slug,
+    section: r.section ?? "",
+    status: (r.status as DraftStatus) ?? "draft",
+    publishedAtIso: r.published_at ?? undefined,
+    reviewedAtIso: r.reviewed_at ?? undefined,
+    createdAtIso: r.created_at,
+    updatedAtIso: r.updated_at,
+    draft: r.draft,
+  }));
+}
+
+export async function readPublishedDrafts(): Promise<ArticleDraft[]> {
+  if (!hasDatabase()) return await readDraftStoreFile();
+  const pool = await ensureDb();
+  const res = await pool.query<{ draft: ArticleDraft }>(
+    `
+    select draft
+    from article_drafts
+    where status = 'published'
+    order by coalesce(published_at, updated_at) desc
+    `,
+  );
+  return res.rows.map((r) => r.draft);
+}
+
+export async function updateDraftStatus(params: {
+  sourceUrl: string;
+  status: DraftStatus;
+}) {
+  if (!hasDatabase()) return { ok: false as const, reason: "no_db" as const };
+  const pool = await ensureDb();
+
+  const reviewedAt =
+    params.status === "draft" ? null : new Date().toISOString();
+  const publishedAt =
+    params.status === "published" ? new Date().toISOString() : null;
+
+  await pool.query(
+    `
+    update article_drafts
+    set
+      status = $2,
+      reviewed_at = coalesce($3::timestamptz, reviewed_at),
+      published_at = case
+        when $2 = 'published' then coalesce(published_at, $4::timestamptz)
+        else null
+      end,
+      updated_at = now()
+    where source_url = $1
+    `,
+    [params.sourceUrl, params.status, reviewedAt, publishedAt],
+  );
+
+  return { ok: true as const };
 }
 
 export async function readDraftStore(): Promise<ArticleDraft[]> {

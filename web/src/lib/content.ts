@@ -4,7 +4,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import type { NewsItem } from "@/lib/sample-data";
 import { getNewsBySection as getSampleNewsBySection, getNewsBySlug as getSampleNewsBySlug, SAMPLE_NEWS } from "@/lib/sample-data";
 import type { DraftSection, ArticleDraft } from "@/lib/draft";
-import { readDraftStore } from "@/lib/local-store";
+import { readDraftStore, readPublishedDrafts } from "@/lib/local-store";
 
 function idFromUrl(url: string) {
   return createHash("sha1").update(url).digest("hex").slice(0, 12);
@@ -28,7 +28,9 @@ function draftToNewsItem(d: ArticleDraft): NewsItem {
 
 export async function getAllNews(): Promise<NewsItem[]> {
   noStore();
-  const drafts = await readDraftStore().catch(() => []);
+  const published = await readPublishedDrafts().catch(() => []);
+  const drafts =
+    published.length > 0 ? published : await readDraftStore().catch(() => []);
   const fromDrafts = drafts.map(draftToNewsItem);
 
   const bySlug = new Map<string, NewsItem>();
@@ -41,7 +43,9 @@ export async function getAllNews(): Promise<NewsItem[]> {
 
 export async function getNewsBySlug(slug: string): Promise<NewsItem | undefined> {
   noStore();
-  const drafts = await readDraftStore().catch(() => []);
+  const published = await readPublishedDrafts().catch(() => []);
+  const drafts =
+    published.length > 0 ? published : await readDraftStore().catch(() => []);
   const match = drafts.find((d) => d.seo.slug === slug);
   if (match) return draftToNewsItem(match);
   return getSampleNewsBySlug(slug);
@@ -51,13 +55,17 @@ export async function getDraftBySlug(
   slug: string,
 ): Promise<ArticleDraft | undefined> {
   noStore();
-  const drafts = await readDraftStore().catch(() => []);
+  const published = await readPublishedDrafts().catch(() => []);
+  const drafts =
+    published.length > 0 ? published : await readDraftStore().catch(() => []);
   return drafts.find((d) => d.seo.slug === slug);
 }
 
 export async function getNewsBySection(section: string): Promise<NewsItem[]> {
   noStore();
-  const drafts = await readDraftStore().catch(() => []);
+  const published = await readPublishedDrafts().catch(() => []);
+  const drafts =
+    published.length > 0 ? published : await readDraftStore().catch(() => []);
   const fromDrafts = drafts
     .filter((d) => d.section === section)
     .map(draftToNewsItem);
