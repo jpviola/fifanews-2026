@@ -51,6 +51,23 @@ async function ensureDb() {
     )
   `);
   await pool.query(`
+    create table if not exists automation_runs (
+      id bigserial primary key,
+      started_at timestamptz not null,
+      finished_at timestamptz not null,
+      source_mode text not null,
+      webset_id text,
+      query text,
+      count_requested int,
+      urls_found int not null,
+      urls_to_process int not null,
+      drafts_generated int not null,
+      errors_count int not null,
+      stored_count int not null,
+      created_at timestamptz not null default now()
+    )
+  `);
+  await pool.query(`
     create table if not exists article_drafts (
       source_url text primary key,
       slug text unique,
@@ -163,6 +180,130 @@ export async function getDraftUrlSet() {
 export async function upsertDraftStore(drafts: ArticleDraft[]) {
   if (hasDatabase()) return await upsertDraftStoreDb(drafts);
   return await upsertDraftStoreFile(drafts);
+}
+
+export type RunLog = {
+  id: number;
+  startedAtIso: string;
+  finishedAtIso: string;
+  sourceMode: "websets" | "search";
+  websetId?: string;
+  query?: string;
+  countRequested?: number;
+  urlsFound: number;
+  urlsToProcess: number;
+  draftsGenerated: number;
+  errorsCount: number;
+  storedCount: number;
+};
+
+export async function upsertRunLog(input: Omit<RunLog, "id">) {
+  if (!hasDatabase()) return { ok: false as const, reason: "no_db" as const };
+
+  const pool = await ensureDb();
+  const res = await pool.query<{ id: string }>(
+    `
+    insert into automation_runs (
+      started_at,
+      finished_at,
+      source_mode,
+      webset_id,
+      query,
+      count_requested,
+      urls_found,
+      urls_to_process,
+      drafts_generated,
+      errors_count,
+      stored_count
+    ) values (
+      $1::timestamptz,
+      $2::timestamptz,
+      $3,
+      $4,
+      $5,
+      $6,
+      $7,
+      $8,
+      $9,
+      $10,
+      $11
+    )
+    returning id::text as id
+    `,
+    [
+      input.startedAtIso,
+      input.finishedAtIso,
+      input.sourceMode,
+      input.websetId ?? null,
+      input.query ?? null,
+      input.countRequested ?? null,
+      input.urlsFound,
+      input.urlsToProcess,
+      input.draftsGenerated,
+      input.errorsCount,
+      input.storedCount,
+    ],
+  );
+
+  return { ok: true as const, id: Number(res.rows[0]?.id ?? 0) };
+}
+
+export async function listRunLogs(limit = 30): Promise<RunLog[]> {
+  if (!hasDatabase()) return [];
+  const pool = await ensureDb();
+
+  const safeLimit = Math.min(Math.max(limit, 1), 200);
+  const res = await pool.query<{
+    id: number;
+    started_at: string;
+    finished_at: string;
+    source_mode: string;
+    webset_id: string | null;
+    query: string | null;
+    count_requested: number | null;
+    urls_found: number;
+    urls_to_process: number;
+    drafts_generated: number;
+    errors_count: number;
+    stored_count: number;
+  }>(
+    `
+    select
+      id,
+      started_at,
+      finished_at,
+      source_mode,
+      webset_id,
+      query,
+      count_requested,
+      urls_found,
+      urls_to_process,
+      drafts_generated,
+      errors_count,
+      stored_count
+    from automation_runs
+    order by id desc
+    limit $1
+    `,
+    [safeLimit],
+  );
+
+  return res.rows.map((r) => ({
+    id: r.id,
+    startedAtIso: r.started_at,
+    finishedAtIso: r.finished_at,
+    sourceMode: (r.source_mode === "websets" ? "websets" : "search") as
+      | "websets"
+      | "search",
+    websetId: r.webset_id ?? undefined,
+    query: r.query ?? undefined,
+    countRequested: r.count_requested ?? undefined,
+    urlsFound: r.urls_found,
+    urlsToProcess: r.urls_to_process,
+    draftsGenerated: r.drafts_generated,
+    errorsCount: r.errors_count,
+    storedCount: r.stored_count,
+  }));
 }
 
 export async function withCronLock<T>(

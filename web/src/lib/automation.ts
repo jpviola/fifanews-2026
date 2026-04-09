@@ -1,6 +1,6 @@
 import { generateArticleDraft } from "@/lib/agent";
 import { exaSearchNews, getExaClient } from "@/lib/exa";
-import { getDraftUrlSet, upsertDraftStore } from "@/lib/local-store";
+import { getDraftUrlSet, upsertDraftStore, upsertRunLog } from "@/lib/local-store";
 
 export type DailyRunInput = {
   websetId?: string;
@@ -78,6 +78,7 @@ async function runWithConcurrency<T, R>(
 }
 
 export async function runDailyAutomation(input: DailyRunInput) {
+  const startedAt = Date.now();
   const query = input.query ?? "mundial 2026 fifa noticias";
   const count = input.count ?? 25;
   const criteria = input.criteria ?? [
@@ -88,19 +89,19 @@ export async function runDailyAutomation(input: DailyRunInput) {
   const onlyNew = input.onlyNew ?? true;
   const force = input.force ?? false;
 
-  const mode = (process.env.EXA_MODE ?? "auto").toLowerCase();
+  const configuredWebsetId = input.websetId ?? process.env.EXA_WEBSET_ID ?? undefined;
+  const mode =
+    configuredWebsetId ? "websets" : (process.env.EXA_MODE ?? "auto").toLowerCase();
 
   let uniqueUrls: string[] = [];
   let dashboardUrl: string | undefined;
-  let websetId: string | undefined;
+  let websetId: string | undefined = configuredWebsetId;
   let sourceMode: "websets" | "search" = "search";
 
   if (mode !== "search") {
     try {
       const exa = getExaClient();
-      if (input.websetId) {
-        websetId = input.websetId;
-      } else {
+      if (!websetId) {
         const webset = await exa.websets.create({
           search: {
             query,
@@ -134,6 +135,9 @@ export async function runDailyAutomation(input: DailyRunInput) {
   }
 
   if (!uniqueUrls.length) {
+    if (mode === "websets") {
+      throw new Error("Websets required but no URLs were retrieved");
+    }
     const results = await exaSearchNews(query, count);
     uniqueUrls = [...new Set(results.map((r) => r.url))].slice(0, count);
     sourceMode = "search";
@@ -164,7 +168,7 @@ export async function runDailyAutomation(input: DailyRunInput) {
 
   const stored = dryRun ? { count: 0 } : await upsertDraftStore(drafts);
 
-  return {
+  const result = {
     sourceMode,
     websetId,
     dashboardUrl,
@@ -179,5 +183,20 @@ export async function runDailyAutomation(input: DailyRunInput) {
     onlyNew,
     force,
   };
-}
 
+  await upsertRunLog({
+    startedAtIso: new Date(startedAt).toISOString(),
+    finishedAtIso: new Date().toISOString(),
+    sourceMode,
+    websetId,
+    query,
+    countRequested: count,
+    urlsFound: uniqueUrls.length,
+    urlsToProcess: urlsToProcess.length,
+    draftsGenerated: drafts.length,
+    errorsCount: errors.length,
+    storedCount: stored.count,
+  });
+
+  return result;
+}
