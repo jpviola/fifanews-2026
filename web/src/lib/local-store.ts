@@ -37,6 +37,21 @@ async function getPool(): Promise<Pool> {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) throw new Error("Missing DATABASE_URL");
 
+  if (!/^postgres(ql)?:\/\//i.test(databaseUrl.trim())) {
+    throw new Error("Invalid DATABASE_URL: expected a postgres:// or postgresql:// connection string");
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(databaseUrl.trim());
+  } catch {
+    throw new Error("Invalid DATABASE_URL: could not parse connection string");
+  }
+
+  if (!parsed.hostname) {
+    throw new Error("Invalid DATABASE_URL: missing host");
+  }
+
   const isLocal =
     databaseUrl.includes("localhost") ||
     databaseUrl.includes("127.0.0.1") ||
