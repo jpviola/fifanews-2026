@@ -87,6 +87,10 @@ export async function getExaTextForUrl(url: string) {
   };
 }
 
+export async function getOgImageUrlForUrl(url: string): Promise<string | undefined> {
+  return await getOpenGraphImageUrl(url);
+}
+
 async function getOpenGraphImageUrl(pageUrl: string): Promise<string | undefined> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);

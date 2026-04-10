@@ -431,6 +431,43 @@ export async function updateDraftStatus(params: {
   return { ok: true as const };
 }
 
+export async function readDraftBySourceUrl(sourceUrl: string) {
+  if (!hasDatabase()) return { ok: false as const, reason: "no_db" as const };
+  const pool = await ensureDb();
+  const res = await pool.query<{ draft: ArticleDraft }>(
+    "select draft from article_drafts where source_url = $1",
+    [sourceUrl],
+  );
+  const draft = res.rows[0]?.draft;
+  return { ok: true as const, draft };
+}
+
+export async function writeDraftBySourceUrl(params: {
+  sourceUrl: string;
+  draft: ArticleDraft;
+}) {
+  if (!hasDatabase()) return { ok: false as const, reason: "no_db" as const };
+  const pool = await ensureDb();
+  await pool.query(
+    `
+    update article_drafts
+    set
+      slug = $2,
+      section = $3,
+      draft = $4::jsonb,
+      updated_at = now()
+    where source_url = $1
+    `,
+    [
+      params.sourceUrl,
+      params.draft.seo.slug,
+      params.draft.section,
+      JSON.stringify(params.draft),
+    ],
+  );
+  return { ok: true as const };
+}
+
 export async function readDraftStore(): Promise<ArticleDraft[]> {
   if (hasDatabase()) return await readDraftStoreDb();
   return await readDraftStoreFile();

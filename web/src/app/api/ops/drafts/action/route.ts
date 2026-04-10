@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import type { DraftStatus } from "@/lib/local-store";
-import { updateDraftStatus } from "@/lib/local-store";
+import { readDraftBySourceUrl, updateDraftStatus, writeDraftBySourceUrl } from "@/lib/local-store";
+import { getOgImageUrlForUrl } from "@/lib/exa";
 import { requireOpsAuth } from "@/lib/ops-auth";
 
 type Body = {
@@ -28,6 +29,33 @@ export async function POST(req: Request) {
     }
 
     const status = mapActionToStatus(body.action ?? "draft");
+
+    if (status === "published") {
+      const current = await readDraftBySourceUrl(body.sourceUrl);
+      if (current.ok && current.draft && !current.draft.image?.url) {
+        const imageUrl = await getOgImageUrlForUrl(body.sourceUrl).catch(() => undefined);
+        if (imageUrl) {
+          const domain =
+            current.draft.source.domain ??
+            (() => {
+              try {
+                return new URL(body.sourceUrl).hostname.replace(/^www\./, "");
+              } catch {
+                return undefined;
+              }
+            })();
+
+          await writeDraftBySourceUrl({
+            sourceUrl: body.sourceUrl,
+            draft: {
+              ...current.draft,
+              image: { url: imageUrl, sourceUrl: body.sourceUrl, sourceLabel: domain },
+            },
+          });
+        }
+      }
+    }
+
     const res = await updateDraftStatus({ sourceUrl: body.sourceUrl, status });
     if (!res.ok) {
       return NextResponse.json(
