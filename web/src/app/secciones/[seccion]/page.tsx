@@ -8,12 +8,13 @@ import { getAllNews, getNewsBySection } from "@/lib/content";
 import { SAMPLE_FIXTURE } from "@/lib/sample-data";
 import { getSectionLabel, SECTIONS } from "@/lib/sections";
 
-export function generateMetadata({
+export async function generateMetadata({
   params,
 }: {
-  params: { seccion: string };
-}): Metadata {
-  const label = getSectionLabel(params.seccion);
+  params: Promise<{ seccion: string }> | { seccion: string };
+}): Promise<Metadata> {
+  const { seccion } = await params;
+  const label = getSectionLabel(seccion);
   return {
     title: label,
     description: `Últimas noticias de ${label} del Mundial 2026.`,
@@ -23,16 +24,17 @@ export function generateMetadata({
 export default async function SectionPage({
   params,
 }: {
-  params: { seccion: string };
+  params: Promise<{ seccion: string }> | { seccion: string };
 }) {
+  const { seccion } = await params;
   const isKnown =
-    params.seccion === "ultima-hora" ||
-    SECTIONS.some((s) => s.key === params.seccion && s.href.startsWith("/secciones/"));
+    seccion === "ultima-hora" ||
+    SECTIONS.some((s) => s.key === seccion && s.href.startsWith("/secciones/"));
 
   if (!isKnown) notFound();
 
-  const label = getSectionLabel(params.seccion);
-  const items = await getNewsBySection(params.seccion);
+  const label = getSectionLabel(seccion);
+  const items = await getNewsBySection(seccion);
   const mostRead = (await getAllNews()).slice(0, 5);
 
   return (

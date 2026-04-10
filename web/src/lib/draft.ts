@@ -59,6 +59,7 @@ export function isArticleDraft(v: unknown): v is ArticleDraft {
 }
 
 export function normalizeSlug(slug: string): string {
+  if (!slug) return "nota";
   const normalized = slug
     .toLowerCase()
     .normalize("NFKD")

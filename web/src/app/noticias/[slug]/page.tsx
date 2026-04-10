@@ -23,9 +23,10 @@ function formatDateTime(publishedAtIso: string) {
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }> | { slug: string };
 }): Promise<Metadata> {
-  const normalized = normalizeSlug(params.slug);
+  const { slug } = await params;
+  const normalized = normalizeSlug(slug);
   const pretty = normalized.replaceAll("-", " ").replace(/\b\w/g, (c) => c.toUpperCase());
   return { title: pretty || "Nota" };
 }
@@ -33,10 +34,11 @@ export async function generateMetadata({
 export default async function ArticlePage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }> | { slug: string };
 }) {
-  const normalized = normalizeSlug(params.slug);
-  if (normalized !== params.slug) {
+  const { slug } = await params;
+  const normalized = normalizeSlug(slug);
+  if (normalized !== slug) {
     redirect(`/noticias/${normalized}`);
   }
 
