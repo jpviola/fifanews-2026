@@ -100,7 +100,7 @@ export default async function ArticlePage({
             <img
               src={resolvedImageUrl}
               alt={item.title}
-              className="h-64 w-full object-cover sm:h-80"
+              className="h-64 w-full bg-white object-contain sm:h-80"
               loading="lazy"
             />
             <div className="px-4 py-3 text-xs text-zinc-600">

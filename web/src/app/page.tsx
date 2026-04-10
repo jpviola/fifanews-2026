@@ -23,6 +23,7 @@ export default async function Home() {
     title: n.title,
     excerpt: n.excerpt,
     sectionLabel: getSectionLabel(n.section),
+    imageUrl: n.imageUrl,
   }));
 
   const bySection = (section: string, limit: number) =>
@@ -61,6 +62,18 @@ export default async function Home() {
             <p className="mt-3 text-base leading-7 text-zinc-700">
               {hero.excerpt}
             </p>
+            <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200/70 bg-gradient-to-br from-zinc-50 via-white to-zinc-100">
+              {hero.imageUrl ? (
+                <img
+                  src={hero.imageUrl}
+                  alt=""
+                  className="h-56 w-full object-cover sm:h-64"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="h-56 w-full sm:h-64" />
+              )}
+            </div>
             <div className="mt-5 flex flex-wrap items-center gap-3 text-sm">
               <Link
                 href={`/secciones/${hero.section}`}

@@ -15,7 +15,7 @@ export function NewsCard({ item }: { item: NewsItem }) {
   return (
     <article className="group rounded-xl border border-zinc-200/70 bg-white/75 p-4 shadow-sm backdrop-blur hover:border-zinc-300">
       <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <Link
             href={`/noticias/${item.slug}`}
             className="line-clamp-2 text-base font-semibold leading-snug text-zinc-950 hover:underline"
@@ -25,6 +25,18 @@ export function NewsCard({ item }: { item: NewsItem }) {
           <p className="mt-2 line-clamp-2 text-sm leading-6 text-zinc-600">
             {item.excerpt}
           </p>
+        </div>
+        <div className="hidden shrink-0 sm:block">
+          <div className="h-16 w-24 overflow-hidden rounded-lg border border-zinc-200/70 bg-gradient-to-br from-zinc-50 via-white to-zinc-100">
+            {item.imageUrl ? (
+              <img
+                src={item.imageUrl}
+                alt=""
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            ) : null}
+          </div>
         </div>
         <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
           {isHot ? (

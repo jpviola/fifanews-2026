@@ -8,6 +8,7 @@ type CarouselItem = {
   title: string;
   excerpt: string;
   sectionLabel: string;
+  imageUrl?: string;
 };
 
 function clampIndex(idx: number, len: number) {
@@ -144,6 +145,18 @@ export function TopCarousel({
               <p className="mt-3 line-clamp-3 text-sm leading-7 text-zinc-700">
                 {active.excerpt}
               </p>
+              <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200/70 bg-gradient-to-br from-zinc-50 via-white to-zinc-100">
+                {active.imageUrl ? (
+                  <img
+                    src={active.imageUrl}
+                    alt=""
+                    className="h-40 w-full object-cover sm:h-48"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="h-40 w-full sm:h-48" />
+                )}
+              </div>
               <div className="mt-5 flex flex-wrap items-center gap-3">
                 <Link
                   href={`/noticias/${active.slug}`}
