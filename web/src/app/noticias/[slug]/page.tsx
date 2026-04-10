@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { NewsCard } from "@/components/NewsCard";
 import { getAllNews, getDraftBySlug, getNewsBySlug } from "@/lib/content";
 import { normalizeSlug } from "@/lib/draft";
+import { getOgImageUrlForUrl } from "@/lib/exa";
 import { getSectionLabel } from "@/lib/sections";
 
 function formatDateTime(publishedAtIso: string) {
@@ -68,6 +69,10 @@ export default async function ArticlePage({
       ? item.facts
       : fallbackFacts;
   const bodyToRender = draft?.cuerpo || item.body || item.excerpt;
+  const resolvedImageUrl =
+    draft?.image?.url ??
+    item.imageUrl ??
+    (await getOgImageUrlForUrl(item.sourceUrl).catch(() => undefined));
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -90,14 +95,13 @@ export default async function ArticlePage({
 
         <p className="mt-3 text-base leading-7 text-zinc-700">{item.excerpt}</p>
 
-        {draft?.image?.url || item.imageUrl ? (
+        {resolvedImageUrl ? (
           <div className="mt-6 overflow-hidden rounded-2xl border border-zinc-200/70 bg-white/70">
             <img
-              src={draft?.image?.url ?? item.imageUrl}
+              src={resolvedImageUrl}
               alt={item.title}
               className="h-64 w-full object-cover sm:h-80"
               loading="lazy"
-              referrerPolicy="no-referrer"
             />
             <div className="px-4 py-3 text-xs text-zinc-600">
               Imagen:{" "}
