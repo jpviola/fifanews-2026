@@ -81,6 +81,25 @@ function getDbTarget() {
         : effectiveUserRaw;
 
     const userParts = effectiveUser ? effectiveUser.split(".") : [];
+
+    const envHost = (process.env.POSTGRES_HOST ?? "").trim();
+    const envPortRaw = (process.env.POSTGRES_PORT ?? "").trim();
+    const envDb = (process.env.POSTGRES_DATABASE ?? "").trim();
+
+    const looksLikePooler = (h: string) => h.includes(".pooler.supabase.com");
+    const effectiveHost = looksLikePooler(u.hostname)
+      ? u.hostname
+      : looksLikePooler(envHost)
+        ? envHost
+        : u.hostname || envHost;
+
+    const effectivePort =
+      (envPortRaw ? Number(envPortRaw) : undefined) ??
+      (u.port ? Number(u.port) : undefined);
+
+    const urlDb = u.pathname?.replace(/^\//, "") || undefined;
+    const effectiveDatabase = envDb || urlDb;
+
     return {
       hasDatabaseUrl: true as const,
       source,
@@ -93,6 +112,9 @@ function getDbTarget() {
       projectRef,
       effectiveUser,
       userPartsCount: userParts.length,
+      effectiveHost,
+      effectivePort,
+      effectiveDatabase,
     };
   } catch {
     return { hasDatabaseUrl: true as const, source, parseError: true as const, parts };
