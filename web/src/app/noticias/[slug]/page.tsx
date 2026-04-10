@@ -25,14 +25,9 @@ export async function generateMetadata({
 }: {
   params: { slug: string };
 }): Promise<Metadata> {
-  try {
-    const normalized = normalizeSlug(params.slug);
-    const item = await getNewsBySlug(normalized);
-    if (!item) return { title: "Nota" };
-    return { title: item.title, description: item.excerpt };
-  } catch {
-    return { title: "Nota" };
-  }
+  const normalized = normalizeSlug(params.slug);
+  const pretty = normalized.replaceAll("-", " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return { title: pretty || "Nota" };
 }
 
 export default async function ArticlePage({
