@@ -63,6 +63,21 @@ function getDatabaseUrlFromEnv(): { url: string; source: string } {
   return { url: "", source: "DATABASE_URL" };
 }
 
+function getSupabaseProjectRefFromEnv(): string {
+  const raw = (process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+  if (!raw) return "";
+  try {
+    const u = new URL(raw);
+    const host = u.hostname;
+    if (!host.endsWith(".supabase.co")) return "";
+    const first = host.split(".")[0] ?? "";
+    if (!first || first === "db") return "";
+    return first;
+  } catch {
+    return "";
+  }
+}
+
 function lockParts(lockKey: string): [number, number] {
   const digest = createHash("sha1").update(lockKey).digest();
   const a = digest.readInt32BE(0);
@@ -134,11 +149,17 @@ async function getPool(): Promise<Pool> {
       throw new Error(`Invalid ${source}: missing username`);
     }
 
+    const projectRef = getSupabaseProjectRefFromEnv();
+    const effectiveUser =
+      host.includes(".pooler.supabase.com") && projectRef && !user.includes(".")
+        ? `${user}.${projectRef}`
+        : user;
+
     g.__draftsPool = new Pool({
       host,
       port,
       database,
-      user,
+      user: effectiveUser,
       password,
       ssl: isLocal ? undefined : { rejectUnauthorized: false, servername: host },
       max: 5,
