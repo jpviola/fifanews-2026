@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { NewsCard } from "@/components/NewsCard";
 import { getAllNews, getDraftBySlug, getNewsBySlug } from "@/lib/content";
+import { normalizeSlug } from "@/lib/draft";
 import { getSectionLabel } from "@/lib/sections";
 
 function formatDateTime(publishedAtIso: string) {
@@ -19,7 +20,8 @@ export async function generateMetadata({
 }: {
   params: { slug: string };
 }): Promise<Metadata> {
-  const item = await getNewsBySlug(params.slug);
+  const normalized = normalizeSlug(params.slug);
+  const item = await getNewsBySlug(normalized);
   if (!item) return { title: "Nota" };
   return { title: item.title, description: item.excerpt };
 }
@@ -29,8 +31,13 @@ export default async function ArticlePage({
 }: {
   params: { slug: string };
 }) {
-  const draft = await getDraftBySlug(params.slug);
-  const item = await getNewsBySlug(params.slug);
+  const normalized = normalizeSlug(params.slug);
+  if (normalized !== params.slug) {
+    redirect(`/noticias/${normalized}`);
+  }
+
+  const draft = await getDraftBySlug(normalized);
+  const item = await getNewsBySlug(normalized);
   if (!item) notFound();
 
   const all = await getAllNews();
