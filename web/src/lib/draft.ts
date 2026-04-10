@@ -15,6 +15,11 @@ export type ArticleDraft = {
     estadios?: string[];
     paises?: string[];
   };
+  image?: {
+    url: string;
+    sourceUrl: string;
+    sourceLabel?: string;
+  };
   seo: {
     title: string;
     description: string;

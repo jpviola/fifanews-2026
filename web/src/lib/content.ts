@@ -23,6 +23,7 @@ function draftToNewsItem(d: ArticleDraft): NewsItem {
     sourceLabel: domain,
     sourceUrl: d.source.url,
     slug: d.seo.slug,
+    imageUrl: d.image?.url,
   };
 }
 

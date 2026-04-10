@@ -90,6 +90,30 @@ export default async function ArticlePage({
 
         <p className="mt-3 text-base leading-7 text-zinc-700">{item.excerpt}</p>
 
+        {draft?.image?.url || item.imageUrl ? (
+          <div className="mt-6 overflow-hidden rounded-2xl border border-zinc-200/70 bg-white/70">
+            <img
+              src={draft?.image?.url ?? item.imageUrl}
+              alt={item.title}
+              className="h-64 w-full object-cover sm:h-80"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+            <div className="px-4 py-3 text-xs text-zinc-600">
+              Imagen:{" "}
+              <a
+                href={draft?.image?.sourceUrl ?? item.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500"
+              >
+                {draft?.image?.sourceLabel ?? item.sourceLabel}
+              </a>
+              .
+            </div>
+          </div>
+        ) : null}
+
         <div className="mt-6 rounded-xl border border-zinc-200/70 bg-white/70 p-4">
           <div className="text-sm font-semibold text-zinc-950">Claves de la nota</div>
           <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-7 text-zinc-700">

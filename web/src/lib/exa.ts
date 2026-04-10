@@ -75,13 +75,87 @@ export async function getExaTextForUrl(url: string) {
   const first = contents?.results?.[0];
   const text = first?.text ?? "";
 
+  const imageUrl = await getOpenGraphImageUrl(url).catch(() => undefined);
+
   return {
     title: first?.title as string | undefined,
     url: first?.url as string | undefined,
     publishedDate: first?.publishedDate as string | undefined,
     author: first?.author as string | undefined,
+    imageUrl,
     text,
   };
+}
+
+async function getOpenGraphImageUrl(pageUrl: string): Promise<string | undefined> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch(pageUrl, {
+      method: "GET",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; fifaWorldCup-news/1.0; +https://copamundial.today/)",
+        Accept: "text/html,application/xhtml+xml",
+      },
+      signal: controller.signal,
+      redirect: "follow",
+    });
+
+    if (!res.ok) return undefined;
+    const html = await res.text();
+
+    const candidates = [
+      extractMetaContent(html, "property", "og:image"),
+      extractMetaContent(html, "name", "twitter:image"),
+      extractMetaContent(html, "property", "og:image:secure_url"),
+      extractMetaContent(html, "name", "twitter:image:src"),
+    ].filter((v): v is string => Boolean(v));
+
+    for (const raw of candidates) {
+      const normalized = normalizeImageUrl(raw, pageUrl);
+      if (normalized) return normalized;
+    }
+
+    return undefined;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function extractMetaContent(html: string, attr: "property" | "name", value: string) {
+  const re1 = new RegExp(
+    `<meta[^>]*\\s${attr}=["']${escapeRegExp(value)}["'][^>]*\\scontent=["']([^"']+)["'][^>]*>`,
+    "i",
+  );
+  const m1 = re1.exec(html);
+  if (m1?.[1]) return m1[1].trim();
+
+  const re2 = new RegExp(
+    `<meta[^>]*\\scontent=["']([^"']+)["'][^>]*\\s${attr}=["']${escapeRegExp(value)}["'][^>]*>`,
+    "i",
+  );
+  const m2 = re2.exec(html);
+  if (m2?.[1]) return m2[1].trim();
+
+  return undefined;
+}
+
+function normalizeImageUrl(raw: string, baseUrl: string): string | undefined {
+  const v = raw.trim();
+  if (!v) return undefined;
+  if (v.startsWith("data:")) return undefined;
+  if (v.startsWith("//")) return `https:${v}`;
+  if (v.startsWith("http://") || v.startsWith("https://")) return v;
+  try {
+    return new URL(v, baseUrl).toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function escapeRegExp(input: string) {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export type ExaWebsetMonitor = {

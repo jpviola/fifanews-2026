@@ -112,6 +112,13 @@ export async function generateArticleDraft(input: DraftInput) {
       ...parsed.seo,
       slug: normalizeSlug(parsed.seo.slug),
     },
+    image: contents.imageUrl
+      ? {
+          url: contents.imageUrl,
+          sourceUrl: input.url,
+          sourceLabel: sourceDomain,
+        }
+      : undefined,
     source: {
       ...parsed.source,
       url: input.url,
