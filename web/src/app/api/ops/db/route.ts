@@ -15,6 +15,21 @@ function isValidPostgresConnectionString(raw: string): boolean {
   }
 }
 
+function getSupabaseProjectRefFromEnv(): string {
+  const raw = (process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+  if (!raw) return "";
+  try {
+    const u = new URL(raw);
+    const host = u.hostname;
+    if (!host.endsWith(".supabase.co")) return "";
+    const first = host.split(".")[0] ?? "";
+    if (!first || first === "db") return "";
+    return first;
+  } catch {
+    return "";
+  }
+}
+
 function getDbTarget() {
   const candidates: Array<{ key: string; value: string }> = [
     { key: "DATABASE_URL", value: process.env.DATABASE_URL ?? "" },
@@ -58,7 +73,14 @@ function getDbTarget() {
     const u = new URL(raw);
     const urlUser = (u.username || "").trim();
     const envUser = (process.env.POSTGRES_USER ?? "").trim();
-    const effectiveUser = envUser || urlUser;
+    const projectRef = getSupabaseProjectRefFromEnv();
+    const effectiveUserRaw = envUser || urlUser;
+    const effectiveUser =
+      u.hostname.includes(".pooler.supabase.com") && projectRef && effectiveUserRaw && !effectiveUserRaw.includes(".")
+        ? `${effectiveUserRaw}.${projectRef}`
+        : effectiveUserRaw;
+
+    const userParts = effectiveUser ? effectiveUser.split(".") : [];
     return {
       hasDatabaseUrl: true as const,
       source,
@@ -68,6 +90,9 @@ function getDbTarget() {
       sslmode: u.searchParams.get("sslmode") ?? undefined,
       parts,
       userFormat: effectiveUser ? (effectiveUser.includes(".") ? "tenant" : "plain") : "missing",
+      projectRef,
+      effectiveUser,
+      userPartsCount: userParts.length,
     };
   } catch {
     return { hasDatabaseUrl: true as const, source, parseError: true as const, parts };
