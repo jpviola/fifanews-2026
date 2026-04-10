@@ -106,22 +106,31 @@ async function getPool(): Promise<Pool> {
   };
 
   if (!g.__draftsPool) {
-    const port = parsed.port ? Number(parsed.port) : 5432;
-    const database = parsed.pathname?.replace(/^\//, "") || "postgres";
-    const user = decodeURIComponent(parsed.username || "");
-    const password = decodeURIComponent(parsed.password || "");
+    const envHost = (process.env.POSTGRES_HOST ?? "").trim();
+    const envPortRaw = (process.env.POSTGRES_PORT ?? "").trim();
+    const envDb = (process.env.POSTGRES_DATABASE ?? "").trim();
+    const envUser = (process.env.POSTGRES_USER ?? "").trim();
+    const envPassword = (process.env.POSTGRES_PASSWORD ?? "").trim();
+
+    const host = envHost || parsed.hostname;
+    const port =
+      (envPortRaw ? Number(envPortRaw) : undefined) ??
+      (parsed.port ? Number(parsed.port) : 5432);
+    const database = envDb || parsed.pathname?.replace(/^\//, "") || "postgres";
+    const user = envUser || decodeURIComponent(parsed.username || "");
+    const password = envPassword || decodeURIComponent(parsed.password || "");
 
     if (!user) {
       throw new Error(`Invalid ${source}: missing username`);
     }
 
     g.__draftsPool = new Pool({
-      host: parsed.hostname,
+      host,
       port,
       database,
       user,
       password,
-      ssl: isLocal ? undefined : { rejectUnauthorized: false, servername: parsed.hostname },
+      ssl: isLocal ? undefined : { rejectUnauthorized: false, servername: host },
       max: 5,
       connectionTimeoutMillis: 8000,
     });
