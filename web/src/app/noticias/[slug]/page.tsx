@@ -8,11 +8,16 @@ import { normalizeSlug } from "@/lib/draft";
 import { getSectionLabel } from "@/lib/sections";
 
 function formatDateTime(publishedAtIso: string) {
-  const date = new Date(publishedAtIso);
-  return new Intl.DateTimeFormat("es-AR", {
-    dateStyle: "full",
-    timeStyle: "short",
-  }).format(date);
+  try {
+    const date = new Date(publishedAtIso);
+    if (Number.isNaN(date.getTime())) return "";
+    return new Intl.DateTimeFormat("es-AR", {
+      dateStyle: "full",
+      timeStyle: "short",
+    }).format(date);
+  } catch {
+    return "";
+  }
 }
 
 export async function generateMetadata({
@@ -20,10 +25,14 @@ export async function generateMetadata({
 }: {
   params: { slug: string };
 }): Promise<Metadata> {
-  const normalized = normalizeSlug(params.slug);
-  const item = await getNewsBySlug(normalized);
-  if (!item) return { title: "Nota" };
-  return { title: item.title, description: item.excerpt };
+  try {
+    const normalized = normalizeSlug(params.slug);
+    const item = await getNewsBySlug(normalized);
+    if (!item) return { title: "Nota" };
+    return { title: item.title, description: item.excerpt };
+  } catch {
+    return { title: "Nota" };
+  }
 }
 
 export default async function ArticlePage({
@@ -36,8 +45,14 @@ export default async function ArticlePage({
     redirect(`/noticias/${normalized}`);
   }
 
-  const draft = await getDraftBySlug(normalized);
-  const item = await getNewsBySlug(normalized);
+  let draft = undefined as Awaited<ReturnType<typeof getDraftBySlug>>;
+  let item = undefined as Awaited<ReturnType<typeof getNewsBySlug>>;
+  try {
+    draft = await getDraftBySlug(normalized);
+    item = await getNewsBySlug(normalized);
+  } catch {
+    notFound();
+  }
   if (!item) notFound();
 
   const all = await getAllNews();
