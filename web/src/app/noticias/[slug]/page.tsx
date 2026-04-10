@@ -100,6 +100,32 @@ export default async function ArticlePage({
                 ))}
             </div>
           </>
+        ) : item.facts?.length || item.body ? (
+          <>
+            {item.facts?.length ? (
+              <div className="mt-6 rounded-xl border border-zinc-200/70 bg-white/70 p-4">
+                <div className="text-sm font-semibold text-zinc-950">
+                  Claves de la nota
+                </div>
+                <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-7 text-zinc-700">
+                  {item.facts.map((b) => (
+                    <li key={b}>{b}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {item.body ? (
+              <div className="mt-6 space-y-4 text-sm leading-7 text-zinc-700">
+                {item.body
+                  .split("\n")
+                  .map((p) => p.trim())
+                  .filter(Boolean)
+                  .map((p) => (
+                    <p key={p}>{p}</p>
+                  ))}
+              </div>
+            ) : null}
+          </>
         ) : null}
 
         <div className="mt-6 text-sm leading-7 text-zinc-700">
