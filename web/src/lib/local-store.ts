@@ -106,9 +106,22 @@ async function getPool(): Promise<Pool> {
   };
 
   if (!g.__draftsPool) {
+    const port = parsed.port ? Number(parsed.port) : 5432;
+    const database = parsed.pathname?.replace(/^\//, "") || "postgres";
+    const user = decodeURIComponent(parsed.username || "");
+    const password = decodeURIComponent(parsed.password || "");
+
+    if (!user) {
+      throw new Error(`Invalid ${source}: missing username`);
+    }
+
     g.__draftsPool = new Pool({
-      connectionString: databaseUrl,
-      ssl: isLocal ? undefined : { rejectUnauthorized: false },
+      host: parsed.hostname,
+      port,
+      database,
+      user,
+      password,
+      ssl: isLocal ? undefined : { rejectUnauthorized: false, servername: parsed.hostname },
       max: 5,
       connectionTimeoutMillis: 8000,
     });
