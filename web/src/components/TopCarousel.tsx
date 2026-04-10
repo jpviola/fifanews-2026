@@ -56,6 +56,7 @@ export function TopCarousel({
 
   const safeIndex = clampIndex(index, len);
   const active = safeItems[safeIndex];
+  const imageSrc = active.imageUrl ? `/api/img?url=${encodeURIComponent(active.imageUrl)}` : "";
   const canSwipe = len > 1;
 
   return (
@@ -148,7 +149,7 @@ export function TopCarousel({
               <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200/70 bg-gradient-to-br from-zinc-50 via-white to-zinc-100">
                 {active.imageUrl ? (
                   <img
-                    src={active.imageUrl}
+                    src={imageSrc}
                     alt=""
                     className="h-40 w-full object-cover sm:h-48"
                     loading="lazy"

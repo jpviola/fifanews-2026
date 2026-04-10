@@ -12,6 +12,7 @@ function formatDateTime(publishedAtIso: string) {
 
 export function NewsCard({ item }: { item: NewsItem }) {
   const isHot = item.section === "ultima-hora";
+  const imageSrc = item.imageUrl ? `/api/img?url=${encodeURIComponent(item.imageUrl)}` : "";
   return (
     <article className="group rounded-xl border border-zinc-200/70 bg-white/75 p-4 shadow-sm backdrop-blur hover:border-zinc-300">
       <div className="flex items-start justify-between gap-4">
@@ -30,7 +31,7 @@ export function NewsCard({ item }: { item: NewsItem }) {
           <div className="h-16 w-24 overflow-hidden rounded-lg border border-zinc-200/70 bg-gradient-to-br from-zinc-50 via-white to-zinc-100">
             {item.imageUrl ? (
               <img
-                src={item.imageUrl}
+                src={imageSrc}
                 alt=""
                 className="h-full w-full object-cover"
                 loading="lazy"

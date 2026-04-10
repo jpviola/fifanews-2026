@@ -98,7 +98,7 @@ export default async function ArticlePage({
         {resolvedImageUrl ? (
           <div className="mt-6 overflow-hidden rounded-2xl border border-zinc-200/70 bg-white/70">
             <img
-              src={resolvedImageUrl}
+              src={`/api/img?url=${encodeURIComponent(resolvedImageUrl)}`}
               alt={item.title}
               className="h-64 w-full bg-white object-contain sm:h-80"
               loading="lazy"

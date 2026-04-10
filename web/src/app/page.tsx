@@ -6,8 +6,13 @@ import { HotTicker } from "@/components/HotTicker";
 import { NewsCard } from "@/components/NewsCard";
 import { TopCarousel } from "@/components/TopCarousel";
 import { getAllNews } from "@/lib/content";
+import { getOgImageUrlForUrl } from "@/lib/exa";
 import { SAMPLE_FIXTURE } from "@/lib/sample-data";
 import { getSectionLabel } from "@/lib/sections";
+
+function toProxyImageUrl(url: string) {
+  return `/api/img?url=${encodeURIComponent(url)}`;
+}
 
 export default async function Home() {
   const sorted = await getAllNews();
@@ -18,16 +23,31 @@ export default async function Home() {
     .slice(0, 8)
     .map((n) => ({ slug: n.slug, title: n.title }));
   const breaking = hotItems[0] ?? null;
-  const topItems = sorted.slice(0, 6).map((n) => ({
+  const topItemsBase = sorted.slice(0, 6).map((n) => ({
     slug: n.slug,
     title: n.title,
     excerpt: n.excerpt,
     sectionLabel: getSectionLabel(n.section),
     imageUrl: n.imageUrl,
   }));
+  const topItems = await Promise.all(
+    topItemsBase.map(async (it) => {
+      const news = sorted.find((n) => n.slug === it.slug);
+      const sourceUrl = news?.sourceUrl;
+      const og = sourceUrl ? await getOgImageUrlForUrl(sourceUrl).catch(() => undefined) : undefined;
+      const resolved = it.imageUrl ?? og;
+      return {
+        ...it,
+        imageUrl: resolved ? toProxyImageUrl(resolved) : undefined,
+      };
+    }),
+  );
 
   const bySection = (section: string, limit: number) =>
     sorted.filter((n) => n.section === section).slice(0, limit);
+
+  const heroOg = hero?.sourceUrl ? await getOgImageUrlForUrl(hero.sourceUrl).catch(() => undefined) : undefined;
+  const heroImage = hero?.imageUrl ?? heroOg;
 
   return (
     <div className="flex flex-col gap-8">
@@ -63,9 +83,9 @@ export default async function Home() {
               {hero.excerpt}
             </p>
             <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200/70 bg-gradient-to-br from-zinc-50 via-white to-zinc-100">
-              {hero.imageUrl ? (
+              {heroImage ? (
                 <img
-                  src={hero.imageUrl}
+                  src={toProxyImageUrl(heroImage)}
                   alt=""
                   className="h-56 w-full object-cover sm:h-64"
                   loading="lazy"
