@@ -102,32 +102,17 @@ export default async function ArticlePage({
           </>
         ) : null}
 
-        <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-          <div className="text-sm font-semibold text-zinc-950">Módulo contextual</div>
-          <div className="mt-1 text-sm leading-6 text-zinc-700">
-            Acá va la ficha según el tipo de nota (partido, estadio, selección,
-            entradas). Para el wireframe dejamos el bloque fijo.
-          </div>
-        </div>
-
-        <div className="mt-6 space-y-4 text-sm leading-7 text-zinc-700">
-          <p>
-            Este contenido se genera a partir de la ingestión diaria (EXA Websets) y
-            luego se edita/enriquece con criterios SEO y relevancia. En producción,
-            se sugiere publicar extractos y sumar valor editorial propio.
-          </p>
-          <p>
-            Fuente original:{" "}
-            <a
-              href={item.sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-zinc-900 underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500"
-            >
-              {item.sourceLabel}
-            </a>
-            .
-          </p>
+        <div className="mt-6 text-sm leading-7 text-zinc-700">
+          Fuente original:{" "}
+          <a
+            href={item.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-zinc-900 underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500"
+          >
+            {item.sourceLabel}
+          </a>
+          .
         </div>
 
         <div className="mt-8 flex items-center justify-between gap-3">
