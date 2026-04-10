@@ -38,10 +38,10 @@ export function BreakingBanner({ item }: { item: BreakingItem | null }) {
   if (!item || hidden) return null;
 
   return (
-    <section className="rounded-2xl border border-red-200/60 bg-white/75 shadow-sm backdrop-blur">
+    <section className="rounded-2xl border border-zinc-200/70 bg-[#e3f2fd]/80 shadow-sm backdrop-blur">
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex items-center gap-2 rounded-full bg-red-500 px-3 py-1 text-xs font-semibold tracking-wide text-white">
+          <span className="flex items-center gap-2 rounded-full bg-[#2196f3] px-3 py-1 text-xs font-semibold tracking-wide text-white">
             <span className="pulse-dot h-2 w-2 rounded-full bg-white" />
             EN VIVO
           </span>

@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { SectionTabs } from "@/components/SectionTabs";
+import { LiveCountdown } from "@/components/LiveCountdown";
+import { SAMPLE_FIXTURE } from "@/lib/sample-data";
 
 export function AppHeader() {
   return (
@@ -10,7 +12,7 @@ export function AppHeader() {
       </div>
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <Link href="/" className="flex items-baseline gap-2">
-          <span className="text-lg font-semibold tracking-tight text-zinc-950 sm:text-xl">
+          <span className="text-lg font-semibold tracking-tight text-[#1a237e] sm:text-xl">
             Mundial 2026
           </span>
           <span className="hidden rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 sm:inline">
@@ -28,9 +30,15 @@ export function AppHeader() {
               className="w-full rounded-full border border-zinc-200 bg-white/70 px-4 py-2 text-sm text-zinc-900 shadow-sm outline-none ring-offset-2 placeholder:text-zinc-400 focus:ring-2 focus:ring-zinc-900/10"
             />
           </div>
+          <LiveCountdown
+            items={SAMPLE_FIXTURE.map((f) => ({
+              title: `${f.local} vs ${f.visitante}`,
+              when: f.fechaIso,
+            }))}
+          />
           <Link
             href="/fixture"
-            className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-800"
+            className="rounded-full bg-[#ff6d00] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#e65f00]"
           >
             Fixture
           </Link>

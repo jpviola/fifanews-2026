@@ -15,7 +15,13 @@ export function SectionTabs() {
 
   return (
     <nav aria-label="Secciones" className="flex gap-2 overflow-x-auto">
-      {SECTIONS.map((s) => {
+      {[
+        { key: "en-vivo", label: "En vivo", href: "/secciones/ultima-hora" },
+        { key: "resultados", label: "Resultados", href: "/fixture" },
+        { key: "clasificacion", label: "Clasificación", href: "/secciones/selecciones" },
+        { key: "noticias", label: "Noticias", href: "/" },
+        ...SECTIONS,
+      ].map((s) => {
         const active = isActive(pathname, s.href);
         return (
           <Link
@@ -24,7 +30,7 @@ export function SectionTabs() {
             className={[
               "whitespace-nowrap rounded-full px-3 py-1.5 text-sm",
               active
-                ? "bg-zinc-900 text-white shadow-sm"
+                ? "bg-[#1a237e] text-white shadow-sm"
                 : "bg-zinc-100/80 text-zinc-700 hover:bg-zinc-200",
             ].join(" ")}
           >

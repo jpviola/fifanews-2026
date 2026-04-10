@@ -94,7 +94,7 @@ export default async function ArticlePage({
           </time>
         </div>
 
-        <h1 className="mt-4 text-2xl font-semibold leading-tight tracking-tight text-zinc-950 sm:text-3xl">
+        <h1 className="mt-4 text-2xl font-semibold leading-tight tracking-tight text-[#1a237e] sm:text-3xl">
           {item.title}
         </h1>
 
@@ -183,7 +183,7 @@ export default async function ArticlePage({
             href={item.sourceUrl}
             target="_blank"
             rel="noreferrer"
-            className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-800"
+            className="rounded-full bg-[#ff6d00] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#e65f00]"
           >
             Ver fuente
           </a>
