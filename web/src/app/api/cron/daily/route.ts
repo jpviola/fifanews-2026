@@ -1,21 +1,42 @@
 import { NextResponse } from "next/server";
 
 import { runDailyAutomation } from "@/lib/automation";
-import { withCronLock } from "@/lib/local-store";
+import { listRunLogs, withCronLock } from "@/lib/local-store";
 
 export async function GET(req: Request) {
-  const expected = process.env.CRON_SECRET ?? "";
-  const auth = req.headers.get("authorization") ?? "";
-  if (!expected || auth !== `Bearer ${expected}`) {
+  const expected = (process.env.CRON_SECRET ?? "").trim();
+  const auth = (req.headers.get("authorization") ?? "").trim();
+  const vercelCron = (req.headers.get("x-vercel-cron") ?? "").trim();
+
+  const hasSecretAuth = expected && auth === `Bearer ${expected}`;
+  const hasVercelCronAuth = Boolean(process.env.VERCEL) && Boolean(vercelCron);
+
+  if (!hasSecretAuth && !hasVercelCronAuth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (hasVercelCronAuth && !hasSecretAuth) {
+    try {
+      const last = (await listRunLogs(1))[0];
+      if (last) {
+        const lastMs = Date.parse(last.startedAtIso);
+        if (Number.isFinite(lastMs) && Date.now() - lastMs < 20 * 60 * 60 * 1000) {
+          return NextResponse.json({
+            skipped: true,
+            reason: "recent_run",
+            lastStartedAtIso: last.startedAtIso,
+          });
+        }
+      }
+    } catch {
+    }
+  }
+
   const url = new URL(req.url);
-  const websetId =
-    url.searchParams.get("websetId") ??
-    process.env.EXA_WEBSET_ID ??
-    undefined;
-  const countParam = url.searchParams.get("count");
+  const websetId = hasSecretAuth
+    ? url.searchParams.get("websetId") ?? process.env.EXA_WEBSET_ID ?? undefined
+    : process.env.EXA_WEBSET_ID ?? undefined;
+  const countParam = hasSecretAuth ? url.searchParams.get("count") : null;
   const count = countParam ? Number(countParam) : undefined;
 
   const lockKey = `cron_daily_${websetId ?? "default"}`;
