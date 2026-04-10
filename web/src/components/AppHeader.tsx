@@ -32,8 +32,8 @@ export function AppHeader() {
           </div>
           <LiveCountdown
             items={SAMPLE_FIXTURE.map((f) => ({
-              title: `${f.local} vs ${f.visitante}`,
-              when: f.fechaIso,
+              title: `${f.home} vs ${f.away}`,
+              when: f.kickoffIso,
             }))}
           />
           <Link
