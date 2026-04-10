@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
+import { AdSlot } from "@/components/AdSlot";
 import { NewsCard } from "@/components/NewsCard";
 import { getAllNews, getDraftBySlug, getNewsBySlug } from "@/lib/content";
 import { normalizeSlug } from "@/lib/draft";
@@ -69,6 +70,10 @@ export default async function ArticlePage({
       ? item.facts
       : fallbackFacts;
   const bodyToRender = draft?.cuerpo || item.body || item.excerpt;
+  const adsenseInlineSlot = process.env.NEXT_PUBLIC_ADSENSE_SLOT_INLINE ?? "";
+  const adsenseInlineSlot2 = process.env.NEXT_PUBLIC_ADSENSE_SLOT_INLINE_2 ?? "";
+  const adsenseArticleSidebarSlot =
+    process.env.NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_SIDEBAR ?? "";
   const resolvedImageUrl =
     draft?.image?.url ??
     item.imageUrl ??
@@ -131,9 +136,30 @@ export default async function ArticlePage({
             .split("\n")
             .map((p) => p.trim())
             .filter(Boolean)
-            .map((p) => (
-              <p key={p}>{p}</p>
-            ))}
+            .flatMap((p, idx) => {
+              const out = [<p key={`p_${idx}`}>{p}</p>];
+              if (idx === 0 && adsenseInlineSlot) {
+                out.push(
+                  <div
+                    key="ad_inline_1"
+                    className="rounded-2xl border border-zinc-200/70 bg-white/70 p-3"
+                  >
+                    <AdSlot provider="adsense" slot={adsenseInlineSlot} />
+                  </div>,
+                );
+              }
+              if (idx === 2 && adsenseInlineSlot2) {
+                out.push(
+                  <div
+                    key="ad_inline_2"
+                    className="rounded-2xl border border-zinc-200/70 bg-white/70 p-3"
+                  >
+                    <AdSlot provider="adsense" slot={adsenseInlineSlot2} />
+                  </div>,
+                );
+              }
+              return out;
+            })}
         </div>
 
         <div className="mt-6 text-sm leading-7 text-zinc-700">
@@ -165,15 +191,11 @@ export default async function ArticlePage({
       </article>
 
       <aside className="space-y-6 lg:col-span-1">
-        <div className="rounded-xl border border-zinc-200/70 bg-white/75 p-4 shadow-sm backdrop-blur">
-          <div className="text-sm font-semibold text-zinc-950">
-            Publicidad (slot)
+        {adsenseArticleSidebarSlot ? (
+          <div className="rounded-xl border border-zinc-200/70 bg-white/75 p-4 shadow-sm backdrop-blur">
+            <AdSlot provider="adsense" slot={adsenseArticleSidebarSlot} />
           </div>
-          <div className="mt-1 text-sm leading-6 text-zinc-700">
-            Espacio reservado para evitar CLS. En web: AdSense. En iOS: AdMob.
-          </div>
-          <div className="mt-3 h-40 rounded-lg border border-dashed border-zinc-300 bg-zinc-50" />
-        </div>
+        ) : null}
 
         <div className="rounded-xl border border-zinc-200/70 bg-white/75 p-4 shadow-sm backdrop-blur">
           <div className="flex items-center justify-between gap-3">

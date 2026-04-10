@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { BreakingBanner } from "@/components/BreakingBanner";
+import { AdSlot } from "@/components/AdSlot";
 import { FixtureWidget } from "@/components/FixtureWidget";
 import { HotTicker } from "@/components/HotTicker";
 import { NewsCard } from "@/components/NewsCard";
@@ -15,6 +16,8 @@ function toProxyImageUrl(url: string) {
 }
 
 export default async function Home() {
+  const adsensePostHeroSlot = process.env.NEXT_PUBLIC_ADSENSE_SLOT_POST_HERO ?? "";
+  const adsenseSidebarSlot = process.env.NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR ?? "";
   const sorted = await getAllNews();
   const hero = sorted[0];
   const rest = sorted.slice(1);
@@ -79,6 +82,11 @@ export default async function Home() {
                 {hero.title}
               </Link>
             </h1>
+            {adsensePostHeroSlot ? (
+              <div className="mt-4 rounded-2xl border border-zinc-200/70 bg-white/70 p-3">
+                <AdSlot provider="adsense" slot={adsensePostHeroSlot} />
+              </div>
+            ) : null}
             <p className="mt-3 text-base leading-7 text-zinc-700">
               {hero.excerpt}
             </p>
@@ -119,6 +127,11 @@ export default async function Home() {
         </div>
         <div className="lg:col-span-1">
           <FixtureWidget title="Agenda" items={SAMPLE_FIXTURE.slice(0, 3)} />
+          {adsenseSidebarSlot ? (
+            <div className="mt-6 rounded-xl border border-zinc-200/70 bg-white/75 p-4 shadow-sm backdrop-blur">
+              <AdSlot provider="adsense" slot={adsenseSidebarSlot} />
+            </div>
+          ) : null}
           <div className="mt-6 rounded-xl border border-zinc-200/70 bg-white/75 p-4 shadow-sm backdrop-blur">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-sm font-semibold text-zinc-950">Lo más leído</h2>
