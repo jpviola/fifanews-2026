@@ -57,6 +57,18 @@ export default async function ArticlePage({
     .filter((n) => n.section === item.section && n.id !== item.id)
     .slice(0, 4);
 
+  const fallbackFacts = [
+    `Contexto: ${getSectionLabel(item.section)} rumbo al Mundial 2026.`,
+    "Qué mirar: confirmaciones oficiales, calendario y próximos anuncios.",
+    "Próximo paso: seguir la fuente original y esperar actualizaciones verificadas.",
+  ];
+  const factsToRender = draft?.bullets_hechos?.length
+    ? draft.bullets_hechos
+    : item.facts?.length
+      ? item.facts
+      : fallbackFacts;
+  const bodyToRender = draft?.cuerpo || item.body || item.excerpt;
+
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <article className="rounded-2xl border border-zinc-200/70 bg-white/75 p-6 shadow-sm backdrop-blur lg:col-span-2">
@@ -78,55 +90,23 @@ export default async function ArticlePage({
 
         <p className="mt-3 text-base leading-7 text-zinc-700">{item.excerpt}</p>
 
-        {draft ? (
-          <>
-            <div className="mt-6 rounded-xl border border-zinc-200/70 bg-white/70 p-4">
-              <div className="text-sm font-semibold text-zinc-950">
-                Claves de la nota
-              </div>
-              <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-7 text-zinc-700">
-                {draft.bullets_hechos.map((b) => (
-                  <li key={b}>{b}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="mt-6 space-y-4 text-sm leading-7 text-zinc-700">
-              {draft.cuerpo
-                .split("\n")
-                .map((p) => p.trim())
-                .filter(Boolean)
-                .map((p) => (
-                  <p key={p}>{p}</p>
-                ))}
-            </div>
-          </>
-        ) : item.facts?.length || item.body ? (
-          <>
-            {item.facts?.length ? (
-              <div className="mt-6 rounded-xl border border-zinc-200/70 bg-white/70 p-4">
-                <div className="text-sm font-semibold text-zinc-950">
-                  Claves de la nota
-                </div>
-                <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-7 text-zinc-700">
-                  {item.facts.map((b) => (
-                    <li key={b}>{b}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-            {item.body ? (
-              <div className="mt-6 space-y-4 text-sm leading-7 text-zinc-700">
-                {item.body
-                  .split("\n")
-                  .map((p) => p.trim())
-                  .filter(Boolean)
-                  .map((p) => (
-                    <p key={p}>{p}</p>
-                  ))}
-              </div>
-            ) : null}
-          </>
-        ) : null}
+        <div className="mt-6 rounded-xl border border-zinc-200/70 bg-white/70 p-4">
+          <div className="text-sm font-semibold text-zinc-950">Claves de la nota</div>
+          <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-7 text-zinc-700">
+            {factsToRender.map((b) => (
+              <li key={b}>{b}</li>
+            ))}
+          </ul>
+        </div>
+        <div className="mt-6 space-y-4 text-sm leading-7 text-zinc-700">
+          {bodyToRender
+            .split("\n")
+            .map((p) => p.trim())
+            .filter(Boolean)
+            .map((p) => (
+              <p key={p}>{p}</p>
+            ))}
+        </div>
 
         <div className="mt-6 text-sm leading-7 text-zinc-700">
           Fuente original:{" "}
