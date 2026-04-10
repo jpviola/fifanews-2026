@@ -112,13 +112,23 @@ async function getPool(): Promise<Pool> {
     const envUser = (process.env.POSTGRES_USER ?? "").trim();
     const envPassword = (process.env.POSTGRES_PASSWORD ?? "").trim();
 
-    const host = envHost || parsed.hostname;
+    const urlHost = parsed.hostname;
+    const urlUser = decodeURIComponent(parsed.username || "");
+    const urlPassword = decodeURIComponent(parsed.password || "");
+
+    const looksLikePooler = (h: string) => h.includes(".pooler.supabase.com");
+
+    const host = looksLikePooler(urlHost)
+      ? urlHost
+      : looksLikePooler(envHost)
+        ? envHost
+        : urlHost || envHost;
     const port =
       (envPortRaw ? Number(envPortRaw) : undefined) ??
       (parsed.port ? Number(parsed.port) : 5432);
     const database = envDb || parsed.pathname?.replace(/^\//, "") || "postgres";
-    const user = envUser || decodeURIComponent(parsed.username || "");
-    const password = envPassword || decodeURIComponent(parsed.password || "");
+    const user = urlUser.includes(".") ? urlUser : envUser.includes(".") ? envUser : urlUser || envUser;
+    const password = urlPassword || envPassword;
 
     if (!user) {
       throw new Error(`Invalid ${source}: missing username`);
