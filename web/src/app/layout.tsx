@@ -39,6 +39,11 @@ export default function RootLayout({
       lang="es-AR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        {adsenseClient ? (
+          <meta name="google-adsense-account" content={adsenseClient} />
+        ) : null}
+      </head>
       <body className="min-h-full premium-bg text-zinc-900">
         {adsenseClient ? (
           <Script
