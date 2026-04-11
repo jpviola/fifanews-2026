@@ -6,11 +6,11 @@ Configuración rápida de AdSense
 2) Script de AdSense
 - Ya está integrado en el head si definís NEXT_PUBLIC_ADSENSE_CLIENT.
 - En Vercel → Project → Settings → Environment Variables:
-  - NEXT_PUBLIC_ADSENSE_CLIENT=ca-pub-9304157100590276
+  - NEXT_PUBLIC_ADSENSE_CLIENT=ca-pub-1971729858495340
 
 3) ads.txt
 - Publicado en /ads.txt con:
-  google.com, pub-9304157100590276, DIRECT, f08c47fec0942fa0
+  google.com, pub-1971729858495340, DIRECT, f08c47fec0942fa0
 
 4) Slots recomendados
 - NEXT_PUBLIC_ADSENSE_SLOT_HEADER          → header sticky (320x50/300x100/728x90)
@@ -28,4 +28,3 @@ Configuración rápida de AdSense
 - Máx 3 anuncios por página móvil.
 - Nada de pop-ups intersticiales.
 - Inline con IntersectionObserver (ya lazies por defecto del navegador).
-
