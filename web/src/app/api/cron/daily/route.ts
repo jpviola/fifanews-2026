@@ -39,18 +39,30 @@ export async function GET(req: Request) {
   const countParam = hasSecretAuth ? url.searchParams.get("count") : null;
   const count = countParam ? Number(countParam) : undefined;
 
+  const automationParams = {
+    websetId,
+    count: Number.isFinite(count) ? count : undefined,
+    onlyNew: true,
+    force: false,
+    concurrency: 3,
+  };
+
   const lockKey = `cron_daily_${websetId ?? "default"}`;
   const locked = await withCronLock(lockKey, async () => {
-    return await runDailyAutomation({
-      websetId,
-      count: Number.isFinite(count) ? count : undefined,
-      onlyNew: true,
-      force: false,
-      concurrency: 3,
-    });
+    return await runDailyAutomation(automationParams);
   });
 
   if (!locked.ok) {
+    if (locked.reason === "no_db") {
+      // Sin DB configurada: ejecutar sin lock distribuido (el almacenamiento en archivo es seguro en Vercel)
+      try {
+        const result = await runDailyAutomation(automationParams);
+        return NextResponse.json(result);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Unknown error";
+        return NextResponse.json({ error: message }, { status: 500 });
+      }
+    }
     return NextResponse.json({
       skipped: true,
       reason: locked.reason,

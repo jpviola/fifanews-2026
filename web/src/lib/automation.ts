@@ -1,5 +1,7 @@
 import { generateArticleDraft } from "@/lib/agent";
 import { exaSearchNews, getExaClient } from "@/lib/exa";
+import { fetchAllRssNews } from "@/lib/rss";
+import { fetchAllNewsApiResults } from "@/lib/newsapi";
 import { getDraftUrlSet, upsertDraftStore, upsertRunLog } from "@/lib/local-store";
 
 export type DailyRunInput = {
@@ -77,6 +79,18 @@ async function runWithConcurrency<T, R>(
   return results;
 }
 
+function dedupeUrls(urls: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const u of urls) {
+    if (!seen.has(u)) {
+      seen.add(u);
+      result.push(u);
+    }
+  }
+  return result;
+}
+
 export async function runDailyAutomation(input: DailyRunInput) {
   const startedAt = Date.now();
   const query = input.query ?? "mundial 2026 fifa noticias";
@@ -98,6 +112,7 @@ export async function runDailyAutomation(input: DailyRunInput) {
   let websetId: string | undefined = configuredWebsetId;
   let sourceMode: "websets" | "search" = "search";
 
+  // 1. Intentar con EXA Websets
   if (mode !== "search") {
     try {
       const exa = getExaClient();
@@ -125,7 +140,7 @@ export async function runDailyAutomation(input: DailyRunInput) {
         .map(extractUrlFromItem)
         .filter((u): u is string => Boolean(u));
 
-      uniqueUrls = [...new Set(urls)].slice(0, count);
+      uniqueUrls = dedupeUrls(urls).slice(0, count);
       sourceMode = "websets";
     } catch (e) {
       const statusCode =
@@ -134,12 +149,32 @@ export async function runDailyAutomation(input: DailyRunInput) {
     }
   }
 
+  // 2. Si no hay resultados de Websets, usar fuentes múltiples en paralelo
   if (!uniqueUrls.length) {
     if (mode === "websets") {
       throw new Error("Websets required but no URLs were retrieved");
     }
-    const results = await exaSearchNews(query, count);
-    uniqueUrls = [...new Set(results.map((r) => r.url))].slice(0, count);
+
+    // Recolectar de todas las fuentes disponibles en paralelo
+    const [exaResults, rssResults, newsApiResults] = await Promise.allSettled([
+      exaSearchNews(query, count).catch(() => []),
+      fetchAllRssNews(count),
+      fetchAllNewsApiResults(query, count),
+    ]);
+
+    const allUrls: string[] = [];
+
+    if (exaResults.status === "fulfilled") {
+      allUrls.push(...exaResults.value.map((r) => r.url));
+    }
+    if (rssResults.status === "fulfilled") {
+      allUrls.push(...rssResults.value.map((r) => r.url));
+    }
+    if (newsApiResults.status === "fulfilled") {
+      allUrls.push(...newsApiResults.value.map((r) => r.url));
+    }
+
+    uniqueUrls = dedupeUrls(allUrls).slice(0, count);
     sourceMode = "search";
   }
 
