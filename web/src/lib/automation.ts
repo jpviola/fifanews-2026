@@ -153,7 +153,9 @@ export async function runDailyAutomation(input: DailyRunInput) {
         errMsg.includes("upgrade") ||
         (isRecord(e) && (e.statusCode === 401 || e.status === 401 ||
           e.statusCode === 403 || e.status === 403));
-      if (mode === "websets" || !isExaAuthError) throw e;
+      if (!isExaAuthError) throw e;
+      // Auth/plan error: siempre caer a search, incluso si mode=websets
+      console.warn("[automation] EXA Websets requiere plan Pro, usando search como fallback");
       // EXA plan insuficiente para Websets → caer al modo search
     }
   }
