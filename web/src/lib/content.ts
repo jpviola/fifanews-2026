@@ -14,21 +14,25 @@ function idFromUrl(url: string) {
   return createHash("sha1").update(url).digest("hex").slice(0, 12);
 }
 
-function draftToNewsItem(d: ArticleDraft): NewsItem {
-  const domain = d.source.domain ?? "Fuente";
-  const publishedAtIso = d.source.publishedDate ?? new Date().toISOString();
-
-  return {
-    id: `draft_${idFromUrl(d.source.url)}`,
-    title: d.headline,
-    excerpt: d.bajada,
-    publishedAtIso,
-    section: d.section as DraftSection,
-    sourceLabel: domain,
-    sourceUrl: d.source.url,
-    slug: d.seo.slug,
-    imageUrl: d.image?.url,
-  };
+function draftToNewsItem(d: ArticleDraft): NewsItem | null {
+  try {
+    if (!d || !d.source?.url || !d.seo?.slug || !d.headline) return null;
+    const domain = d.source.domain ?? "Fuente";
+    const publishedAtIso = d.source.publishedDate ?? new Date().toISOString();
+    return {
+      id: `draft_${idFromUrl(d.source.url)}`,
+      title: d.headline,
+      excerpt: d.bajada ?? "",
+      publishedAtIso,
+      section: d.section as DraftSection,
+      sourceLabel: domain,
+      sourceUrl: d.source.url,
+      slug: d.seo.slug,
+      imageUrl: d.image?.url,
+    };
+  } catch {
+    return null;
+  }
 }
 
 // Lee los artículos publicados una vez y los cachea en la misma request
@@ -39,7 +43,7 @@ async function fetchPublished(): Promise<ArticleDraft[]> {
 export async function getAllNews(): Promise<NewsItem[]> {
   noStore();
   const published = await fetchPublished();
-  const fromDrafts = published.map(draftToNewsItem);
+  const fromDrafts = published.map(draftToNewsItem).filter((x): x is NewsItem => x !== null);
 
   // Mostrar sample data solo si no hay ningún artículo real publicado todavía
   const fallback = fromDrafts.length === 0 ? SAMPLE_NEWS : [];
@@ -76,7 +80,8 @@ export async function getNewsBySection(section: string): Promise<NewsItem[]> {
   const published = await fetchPublished();
   const fromDrafts = published
     .filter((d) => d.section === section)
-    .map(draftToNewsItem);
+    .map(draftToNewsItem)
+    .filter((x): x is NewsItem => x !== null);
 
   // Mostrar sample de esta sección solo si no hay artículos reales en absoluto
   const fallback = published.length === 0 ? getSampleNewsBySection(section) : [];
