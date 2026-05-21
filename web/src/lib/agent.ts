@@ -91,7 +91,7 @@ export async function generateArticleDraft(input: DraftInput) {
     .join("\n");
 
   const completion = await openRouterChatCompletion({
-    model: process.env.OPENROUTER_MODEL ?? "minimax/minimax-m2.5",
+    model: process.env.OPENROUTER_MODEL ?? "deepseek/deepseek-chat-v3-0324:free",
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },
