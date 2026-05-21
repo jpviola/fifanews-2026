@@ -131,27 +131,69 @@ export default async function Home() {
         </aside>
       </section>
 
-      {/* === SECTION ROWS === */}
-      {contentSections.map((sec) => {
-        const items = bySection(sec.key, 4);
-        if (items.length === 0) return null;
+      {/* === SECTIONS GRID ===
+           Secciones con >= 3 artículos: fila propia con grid amplio
+           Secciones con 1-2 artículos: agrupadas en una grilla de columnas */}
+      {(() => {
+        const richSections = contentSections.filter(s => bySection(s.key, 1).length >= 3);
+        const thinSections = contentSections.filter(s => {
+          const n = bySection(s.key, 1).length;
+          return n > 0 && n < 3;
+        });
+
         return (
-          <section key={sec.key} className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="h-6 w-1 rounded-full bg-[#ff6d00]" />
-              <h2 className="text-lg font-bold text-zinc-900">{sec.label}</h2>
-              <Link href={sec.href} className="ml-auto text-sm text-[#1a237e] hover:underline">
-                Ver todo →
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {items.map((item) => (
-                <NewsCard key={item.id} item={item} />
-              ))}
-            </div>
-          </section>
+          <>
+            {/* Secciones con suficientes artículos: fila propia */}
+            {richSections.map((sec) => {
+              const items = bySection(sec.key, 3);
+              return (
+                <section key={sec.key} className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-6 w-1 rounded-full bg-[#ff6d00]" />
+                    <h2 className="text-lg font-bold text-zinc-900">{sec.label}</h2>
+                    <Link href={sec.href} className="ml-auto text-sm text-[#1a237e] hover:underline">
+                      Ver todo →
+                    </Link>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {items.map((item) => (
+                      <NewsCard key={item.id} item={item} />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+
+            {/* Secciones con pocos artículos: todas juntas en columnas */}
+            {thinSections.length > 0 && (
+              <section className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-6 w-1 rounded-full bg-[#ff6d00]" />
+                  <h2 className="text-lg font-bold text-zinc-900">Mas secciones</h2>
+                </div>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {thinSections.map((sec) => {
+                    const items = bySection(sec.key, 4);
+                    return (
+                      <div key={sec.key} className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500">{sec.label}</h3>
+                          <Link href={sec.href} className="text-xs text-[#1a237e] hover:underline">Ver todo →</Link>
+                        </div>
+                        <div className="space-y-3">
+                          {items.map((item) => (
+                            <NewsCardHorizontal key={item.id} item={item} />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </>
         );
-      })}
+      })()}
 
       {/* === HORIZONTAL LIST (more latest) === */}
       {rest.length > 4 && (
