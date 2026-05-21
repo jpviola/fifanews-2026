@@ -32,6 +32,54 @@ export async function generateArticleDraft(input: DraftInput) {
     .join("\n");
 
   const system = [
+    "Sos editor deportivo argentino senior (es-AR), estilo periodico deportivo de calidad.",
+    "MISION: producir una nota ORIGINAL y ELABORADA sobre el Mundial 2026. NO es un resumen de la fuente.",
+    "REGLAS ESTRICTAS:",
+    "1. PROHIBIDO copiar frases o parrafos de la fuente. Reescribi todo con voz propia.",
+    "2. PROHIBIDO usar bullet points en el campo cuerpo. Solo prosa narrativa fluida en parrafos.",
+    "3. Agrega contexto periodistico: historia, estadisticas, implicancias para el torneo.",
+    "4. Titulos informativos y atractivos, sin clickbait.",
+    "5. La bajada debe complementar el titular, no repetirlo.",
+    "6. El cuerpo debe leer como articulo de diario: 4-6 parrafos con desarrollo narrativo.",
+    "7. bullets_hechos: solo datos VERIFICABLES y CONCRETOS de la fuente (max 6).",
+    "8. No inventes datos que no esten en la fuente.",
+    "9. Incluye siempre la URL de la fuente en el objeto source.",
+    "Salida: SOLO JSON valido sin markdown ni bloques de codigo.",
+  ].join("
+");eateHash } from "crypto";
+import { getExaTextForUrl } from "@/lib/exa";
+import { isArticleDraft, normalizeSlug, tryParseJsonObject } from "@/lib/draft";
+import { getFirstAssistantContent, getLLMConfig, openRouterChatCompletion } from "@/lib/openrouter";
+import { SECTIONS } from "@/lib/sections";
+
+export type DraftInput = {
+  url: string;
+  hintTitle?: string;
+  hintPublishedDate?: string;
+  /** Si se especifica, el LLM debe asignar este section key al artículo */
+  targetSection?: string;
+};
+
+function getDomain(url: string): string | undefined {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return undefined;
+  }
+}
+
+export async function generateArticleDraft(input: DraftInput) {
+  const sourceDomain = getDomain(input.url);
+  const contents = await getExaTextForUrl(input.url);
+
+  const sourceTitle = input.hintTitle ?? contents.title;
+  const sourcePublishedDate = input.hintPublishedDate ?? contents.publishedDate;
+
+  const sectionsForModel = SECTIONS.filter((s) => s.key !== "partidos-y-fixture")
+    .map((s) => `${s.key}: ${s.label}`)
+    .join("\n");
+
+  const system = [
     "Sos editor deportivo argentino (es-AR), estilo periÃ³dico/canal de noticias.",
     "Objetivo: redactar una nota original sobre el Mundial 2026 a partir de una fuente, sin copiar texto literal.",
     "Reglas:",

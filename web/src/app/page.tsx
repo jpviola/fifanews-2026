@@ -5,6 +5,7 @@ import { FixtureWidget } from "@/components/FixtureWidget";
 import { HotTicker } from "@/components/HotTicker";
 import { NewsCard, NewsCardHorizontal } from "@/components/NewsCard";
 import { getAllNews } from "@/lib/content";
+import { HeroImage } from "@/components/HeroImage";
 import { SAMPLE_FIXTURE } from "@/lib/sample-data";
 import { getSectionLabel, SECTIONS } from "@/lib/sections";
 
@@ -62,16 +63,7 @@ export default async function Home() {
           className="group relative block w-full overflow-hidden rounded-2xl bg-zinc-900 shadow-lg"
           style={{ minHeight: "420px" }}
         >
-          {hero.imageUrl && (
-            <img
-              src={proxyUrl(hero.imageUrl)}
-              alt={hero.title}
-              className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
-            />
-          )}
-          {!hero.imageUrl && (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#1a237e] to-[#283593]" />
-          )}
+          <HeroImage src={hero.imageUrl} />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
           <div className="relative flex h-full min-h-[420px] flex-col justify-end p-6 sm:p-8">
             <span className={`mb-3 inline-block self-start rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${
@@ -152,7 +144,7 @@ export default async function Home() {
                 Ver todo →
               </Link>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((item) => (
                 <NewsCard key={item.id} item={item} />
               ))}
