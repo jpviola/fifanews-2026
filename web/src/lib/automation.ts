@@ -107,7 +107,7 @@ export async function runDailyAutomation(input: DailyRunInput) {
 
   const configuredWebsetId = input.websetId ?? process.env.EXA_WEBSET_ID ?? undefined;
   const mode =
-    configuredWebsetId ? "websets" : (process.env.EXA_MODE ?? "auto").toLowerCase();
+    configuredWebsetId ? "websets" : (process.env.EXA_MODE ?? "search").toLowerCase();
 
   let uniqueUrls: string[] = [];
   let dashboardUrl: string | undefined;
@@ -145,9 +145,16 @@ export async function runDailyAutomation(input: DailyRunInput) {
       uniqueUrls = dedupeUrls(urls).slice(0, count);
       sourceMode = "websets";
     } catch (e) {
-      const statusCode =
-        isRecord(e) && typeof e.statusCode === "number" ? e.statusCode : undefined;
-      if (mode === "websets" || statusCode !== 401) throw e;
+      // ExaError puede usar .status, .statusCode o indicarlo en el mensaje
+      const errMsg = e instanceof Error ? e.message.toLowerCase() : "";
+      const isExaAuthError =
+        errMsg.includes("does not have access") ||
+        errMsg.includes("unauthorized") ||
+        errMsg.includes("upgrade") ||
+        (isRecord(e) && (e.statusCode === 401 || e.status === 401 ||
+          e.statusCode === 403 || e.status === 403));
+      if (mode === "websets" || !isExaAuthError) throw e;
+      // EXA plan insuficiente para Websets → caer al modo search
     }
   }
 
