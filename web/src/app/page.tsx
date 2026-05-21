@@ -7,7 +7,6 @@ import { HotTicker } from "@/components/HotTicker";
 import { NewsCard } from "@/components/NewsCard";
 import { TopCarousel } from "@/components/TopCarousel";
 import { getAllNews } from "@/lib/content";
-import { getOgImageUrlForUrl } from "@/lib/exa";
 import { SAMPLE_FIXTURE } from "@/lib/sample-data";
 import { getSectionLabel } from "@/lib/sections";
 
@@ -26,32 +25,20 @@ export default async function Home() {
     .slice(0, 8)
     .map((n) => ({ slug: n.slug, title: n.title }));
   const breaking = hotItems[0] ?? null;
-  const topItemsBase = sorted.slice(0, 6).map((n) => ({
+  const topItems = sorted.slice(0, 6).map((n) => ({
     slug: n.slug,
     title: n.title,
     excerpt: n.excerpt,
     sectionLabel: getSectionLabel(n.section),
-    imageUrl: n.imageUrl,
+    imageUrl: n.imageUrl ? toProxyImageUrl(n.imageUrl) : undefined,
   }));
-  const topItems = await Promise.all(
-    topItemsBase.map(async (it) => {
-      const news = sorted.find((n) => n.slug === it.slug);
-      const sourceUrl = news?.sourceUrl;
-      const og = sourceUrl ? await getOgImageUrlForUrl(sourceUrl).catch(() => undefined) : undefined;
-      const resolved = it.imageUrl ?? og;
-      return {
-        ...it,
-        imageUrl: resolved ? toProxyImageUrl(resolved) : undefined,
-      };
-    }),
-  );
 
   const bySection = (section: string, limit: number) =>
     sorted.filter((n) => n.section === section).slice(0, limit);
 
-  const heroOg = hero?.sourceUrl ? await getOgImageUrlForUrl(hero.sourceUrl).catch(() => undefined) : undefined;
-  const heroImage = hero?.imageUrl ?? heroOg;
+  const heroImage = hero?.imageUrl;
 
+if (!hero) {    return (      <div className="flex flex-col gap-8">        <BreakingBanner item={breaking} />        <div className="rounded-2xl border border-zinc-200/70 bg-white/75 p-10 text-center shadow-sm backdrop-blur">          <h1 className="text-2xl font-semibold text-[#1a237e]">Cargando las últimas noticias…</h1>          <p className="mt-3 text-zinc-600">El equipo está preparando el contenido. Volvé en unos minutos.</p>        </div>      </div>    );  }
   return (
     <div className="flex flex-col gap-8">
       <BreakingBanner item={breaking} />
@@ -109,14 +96,16 @@ export default async function Home() {
               >
                 Más de {getSectionLabel(hero.section)}
               </Link>
-              <a
-                href={hero.sourceUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-full bg-[#ff6d00] px-4 py-2 text-white shadow-sm hover:bg-[#e65f00]"
-              >
-                Ver fuente
-              </a>
+              {hero.sourceUrl ? (
+                <a
+                  href={hero.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full bg-[#ff6d00] px-4 py-2 text-white shadow-sm hover:bg-[#e65f00]"
+                >
+                  Ver fuente
+                </a>
+              ) : null}
             </div>
           </article>
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">

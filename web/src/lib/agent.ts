@@ -98,7 +98,7 @@ export async function generateArticleDraft(input: DraftInput) {
       { role: "user", content: user },
     ],
     temperature: 0.35,
-    maxTokens: 1100,
+    maxTokens: 2500,
   });
 
   const content = getFirstAssistantContent(completion);
