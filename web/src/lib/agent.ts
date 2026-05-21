@@ -1,6 +1,6 @@
 import { getExaTextForUrl } from "@/lib/exa";
 import { isArticleDraft, normalizeSlug, tryParseJsonObject } from "@/lib/draft";
-import { getFirstAssistantContent, openRouterChatCompletion } from "@/lib/openrouter";
+import { getFirstAssistantContent, getLLMConfig, openRouterChatCompletion } from "@/lib/openrouter";
 import { SECTIONS } from "@/lib/sections";
 
 export type DraftInput = {
@@ -91,7 +91,7 @@ export async function generateArticleDraft(input: DraftInput) {
     .join("\n");
 
   const completion = await openRouterChatCompletion({
-    model: process.env.OPENROUTER_MODEL ?? "deepseek/deepseek-chat-v3-0324:free",
+    model: process.env.OPENROUTER_MODEL ?? getLLMConfig().defaultModel,
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },
