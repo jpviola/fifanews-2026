@@ -106,7 +106,7 @@ export async function runDailyAutomation(input: DailyRunInput) {
   const autoPublish = input.autoPublish ?? true;
 
   const configuredWebsetId = input.websetId ?? process.env.EXA_WEBSET_ID ?? undefined;
-  const mode =
+  let mode =
     configuredWebsetId ? "websets" : (process.env.EXA_MODE ?? "search").toLowerCase();
 
   let uniqueUrls: string[] = [];
@@ -154,7 +154,7 @@ export async function runDailyAutomation(input: DailyRunInput) {
         (isRecord(e) && (e.statusCode === 401 || e.status === 401 ||
           e.statusCode === 403 || e.status === 403));
       if (!isExaAuthError) throw e;
-      // Auth/plan error: siempre caer a search, incluso si mode=websets
+      mode = "search"; // reset para que el fallback funcione
       console.warn("[automation] EXA Websets requiere plan Pro, usando search como fallback");
       // EXA plan insuficiente para Websets → caer al modo search
     }
