@@ -13,7 +13,11 @@ type StoredDrafts = {
 };
 
 function getStorePath() {
-  return join(process.cwd(), ".local-data", "drafts.json");
+  // En Vercel process.cwd() es read-only; /tmp es siempre escribible
+  const base = process.env.VERCEL
+    ? "/tmp/fifanews-local-data"
+    : join(process.cwd(), ".local-data");
+  return join(base, "drafts.json");
 }
 
 function isValidPostgresConnectionString(raw: string): boolean {
@@ -489,8 +493,17 @@ export async function getDraftUrlSet() {
 }
 
 export async function upsertDraftStore(drafts: ArticleDraft[], autoPublish = false) {
-  if (hasDatabase()) return await upsertDraftStoreDb(drafts, autoPublish);
-  return await upsertDraftStoreFile(drafts);
+  // Intentar DB directamente: hasDatabase() puede dar falso negativo
+  // si el formato del connection string no pasa la validacion estricta.
+  try {
+    return await upsertDraftStoreDb(drafts, autoPublish);
+  } catch (dbErr) {
+    const msg = dbErr instanceof Error ? dbErr.message : String(dbErr);
+    if (msg.includes("Missing database") || !hasDatabase()) {
+      return await upsertDraftStoreFile(drafts);
+    }
+    throw dbErr;
+  }
 }
 
 export type RunLog = {
