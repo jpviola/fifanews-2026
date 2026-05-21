@@ -276,21 +276,23 @@ async function readDraftStoreDb(): Promise<ArticleDraft[]> {
   return drafts;
 }
 
-async function upsertDraftStoreDb(drafts: ArticleDraft[]) {
+async function upsertDraftStoreDb(drafts: ArticleDraft[], autoPublish = false) {
   const pool = await ensureDb();
   for (const d of drafts) {
     await pool.query(
       `
-      insert into article_drafts (source_url, slug, section, status, draft, updated_at)
-      values ($1, $2, $3, 'draft', $4::jsonb, now())
+      insert into article_drafts (source_url, slug, section, status, published_at, draft, updated_at)
+      values ($1, $2, $3, $5, case when $5 = 'published' then now() else null end, $4::jsonb, now())
       on conflict (source_url)
       do update set
         slug = excluded.slug,
         section = excluded.section,
         draft = excluded.draft,
+        status = case when article_drafts.status = 'draft' then excluded.status else article_drafts.status end,
+        published_at = case when article_drafts.status = 'draft' and excluded.status = 'published' then now() else article_drafts.published_at end,
         updated_at = now()
       `,
-      [d.source.url, d.seo.slug, d.section, JSON.stringify(d)],
+      [d.source.url, d.seo.slug, d.section, JSON.stringify(d), autoPublish ? 'published' : 'draft'],
     );
   }
 
@@ -486,8 +488,8 @@ export async function getDraftUrlSet() {
   return new Set(drafts.map((d) => d.source.url));
 }
 
-export async function upsertDraftStore(drafts: ArticleDraft[]) {
-  if (hasDatabase()) return await upsertDraftStoreDb(drafts);
+export async function upsertDraftStore(drafts: ArticleDraft[], autoPublish = false) {
+  if (hasDatabase()) return await upsertDraftStoreDb(drafts, autoPublish);
   return await upsertDraftStoreFile(drafts);
 }
 

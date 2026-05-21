@@ -13,6 +13,7 @@ export type DailyRunInput = {
   dryRun?: boolean;
   onlyNew?: boolean;
   force?: boolean;
+  autoPublish?: boolean;
 };
 
 function asUrl(input: unknown): string | undefined {
@@ -102,6 +103,7 @@ export async function runDailyAutomation(input: DailyRunInput) {
   const dryRun = input.dryRun === true;
   const onlyNew = input.onlyNew ?? true;
   const force = input.force ?? false;
+  const autoPublish = input.autoPublish ?? true;
 
   const configuredWebsetId = input.websetId ?? process.env.EXA_WEBSET_ID ?? undefined;
   const mode =
@@ -201,7 +203,7 @@ export async function runDailyAutomation(input: DailyRunInput) {
     .map((r, idx) => (r.ok ? null : { url: urlsToProcess[idx], error: r.error }))
     .filter(Boolean);
 
-  const stored = dryRun ? { count: 0 } : await upsertDraftStore(drafts);
+  const stored = dryRun ? { count: 0 } : await upsertDraftStore(drafts, autoPublish);
 
   const result = {
     sourceMode,
