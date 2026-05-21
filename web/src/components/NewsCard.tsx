@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import type { NewsItem } from "@/lib/sample-data";
+import { NewsImage } from "@/components/NewsImage";
 
 function formatDateTime(publishedAtIso: string) {
   const date = new Date(publishedAtIso);
@@ -12,7 +13,6 @@ function formatDateTime(publishedAtIso: string) {
 
 export function NewsCard({ item }: { item: NewsItem }) {
   const isHot = item.section === "ultima-hora";
-  const imageSrc = item.imageUrl ? `/api/img?url=${encodeURIComponent(item.imageUrl)}` : "";
   return (
     <article className="group rounded-xl border border-zinc-200/70 bg-white/75 p-4 shadow-sm backdrop-blur hover:border-zinc-300">
       <div className="flex items-start justify-between gap-4">
@@ -27,18 +27,18 @@ export function NewsCard({ item }: { item: NewsItem }) {
             {item.excerpt}
           </p>
         </div>
-        <div className="hidden shrink-0 sm:block">
-          <div className="h-16 w-24 overflow-hidden rounded-lg border border-zinc-200/70 bg-gradient-to-br from-zinc-50 via-white to-zinc-100">
-            {item.imageUrl ? (
-              <img
-                src={imageSrc}
-                alt=""
-                className="h-full w-full object-cover"
-                loading="lazy"
-              />
-            ) : null}
+        {item.imageUrl ? (
+          <div className="hidden shrink-0 sm:block">
+            <NewsImage
+              src={item.imageUrl}
+              alt=""
+              containerClassName="h-16 w-24 overflow-hidden rounded-lg border border-zinc-200/70 bg-gradient-to-br from-zinc-50 via-white to-zinc-100"
+              imgClassName="h-full w-full object-cover"
+            />
           </div>
-        </div>
+        ) : (
+          <div className="hidden h-16 w-24 shrink-0 overflow-hidden rounded-lg border border-zinc-200/70 bg-gradient-to-br from-zinc-50 via-white to-zinc-100 sm:block" />
+        )}
         <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
           {isHot ? (
             <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-semibold text-white">

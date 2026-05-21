@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { AdSlot } from "@/components/AdSlot";
+import { NewsImage } from "@/components/NewsImage";
 import { NewsCard } from "@/components/NewsCard";
 import { getAllNews, getDraftBySlug, getNewsBySlug } from "@/lib/content";
 import { normalizeSlug } from "@/lib/draft";
@@ -102,11 +103,10 @@ export default async function ArticlePage({
 
         {resolvedImageUrl ? (
           <div className="mt-6 overflow-hidden rounded-2xl border border-zinc-200/70 bg-white/70">
-            <img
-              src={`/api/img?url=${encodeURIComponent(resolvedImageUrl)}`}
+            <NewsImage
+              src={resolvedImageUrl}
               alt={item.title}
-              className="h-64 w-full bg-white object-contain sm:h-80"
-              loading="lazy"
+              imgClassName="h-64 w-full bg-white object-contain sm:h-80"
             />
             <div className="px-4 py-3 text-xs text-zinc-600">
               Imagen:{" "}
