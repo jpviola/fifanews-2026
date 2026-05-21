@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 import { runDailyAutomation } from "@/lib/automation";
 import { listRunLogs, withCronLock } from "@/lib/local-store";
 
+// Vercel Hobby: 60s max. Pro: hasta 300s.
+export const maxDuration = 60;
+
 export async function GET(req: Request) {
   const expected = (process.env.CRON_SECRET ?? "").trim();
   const auth = (req.headers.get("authorization") ?? "").trim();
@@ -41,34 +44,34 @@ export async function GET(req: Request) {
 
   const automationParams = {
     websetId,
-    count: Number.isFinite(count) ? count : undefined,
+    // Máximo 8 artículos por run para no exceder el timeout de 60s en Vercel Hobby
+    count: Number.isFinite(count) && count! > 0 ? count : 8,
     onlyNew: true,
     force: false,
-    concurrency: 3,
+    concurrency: 2,
+    autoPublish: true,
   };
 
   const lockKey = `cron_daily_${websetId ?? "default"}`;
-  const locked = await withCronLock(lockKey, async () => {
-    return await runDailyAutomation(automationParams);
-  });
 
-  if (!locked.ok) {
-    if (locked.reason === "no_db") {
-      // Sin DB configurada: ejecutar sin lock distribuido (el almacenamiento en archivo es seguro en Vercel)
-      try {
+  try {
+    const locked = await withCronLock(lockKey, async () => {
+      return await runDailyAutomation(automationParams);
+    });
+
+    if (!locked.ok) {
+      if (locked.reason === "no_db") {
         const result = await runDailyAutomation(automationParams);
         return NextResponse.json(result);
-      } catch (e) {
-        const message = e instanceof Error ? e.message : "Unknown error";
-        return NextResponse.json({ error: message }, { status: 500 });
       }
+      return NextResponse.json({ skipped: true, reason: locked.reason, websetId });
     }
-    return NextResponse.json({
-      skipped: true,
-      reason: locked.reason,
-      websetId,
-    });
-  }
 
-  return NextResponse.json(locked.result);
+    return NextResponse.json(locked.result);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    const stack = e instanceof Error ? e.stack?.split("\n").slice(0, 8) : undefined;
+    console.error("[cron/daily] Error:", message, stack);
+    return NextResponse.json({ error: message, stack }, { status: 500 });
+  }
 }
