@@ -50,7 +50,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full premium-bg text-zinc-900">
+        {/* AdSense script — habilita Auto Ads globalmente y sirve los ad units manuales */}
         <Script
+          id="adsense-init"
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
           crossOrigin="anonymous"

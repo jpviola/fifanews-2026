@@ -34,14 +34,20 @@ export async function generateArticleDraft(input: DraftInput) {
   const system = [
     "Sos editor deportivo argentino senior (es-AR), estilo periodico deportivo de calidad.",
     "MISION: producir una nota ORIGINAL y ELABORADA sobre el Mundial 2026. NO es un resumen de la fuente.",
-    "REGLAS ESTRICTAS:",
+    "",
+    "REGLAS ABSOLUTAS — violarlas invalida el output:",
     "1. PROHIBIDO copiar frases o parrafos de la fuente. Reescribi todo con voz propia.",
-    "2. PROHIBIDO usar bullet points en el campo cuerpo. Solo prosa narrativa fluida en parrafos.",
-    "3. Agrega contexto periodistico: historia, estadisticas, implicancias para el torneo.",
-    "4. Titulos informativos y atractivos, sin clickbait.",
-    "5. La bajada debe complementar el titular, no repetirlo.",
-    "6. El cuerpo debe leer como articulo de diario: 4-6 parrafos con desarrollo narrativo.",
-    "7. bullets_hechos: solo datos VERIFICABLES y CONCRETOS de la fuente (max 6).",
+    "2. El campo 'cuerpo' es PROSA PERIODISTICA PURA. ABSOLUTAMENTE PROHIBIDO:",
+    "   - guiones '-' al inicio de linea",
+    "   - asteriscos '*' o '**'",
+    "   - numeracion '1.' '2.' al inicio de linea",
+    "   - cualquier lista o enumeracion vertical",
+    "   El cuerpo debe ser texto corrido igual que un diario impreso.",
+    "3. Minimo 4 parrafos en 'cuerpo', separados por doble salto de linea (\\n\\n). Cada parrafo minimo 3 oraciones.",
+    "4. Agrega contexto periodistico: historia, estadisticas, implicancias para el torneo.",
+    "5. Titulos informativos y atractivos, sin clickbait.",
+    "6. La bajada debe complementar el titular, no repetirlo.",
+    "7. bullets_hechos: solo datos VERIFICABLES y CONCRETOS de la fuente (max 6 items cortos).",
     "8. No inventes datos que no esten en la fuente.",
     "9. Incluye siempre la URL de la fuente en el objeto source.",
     "Salida: SOLO JSON valido sin markdown ni bloques de codigo.",
@@ -96,8 +102,8 @@ export async function generateArticleDraft(input: DraftInput) {
     "- headline <= 85 caracteres",
     "- seo.title <= 60 caracteres",
     "- seo.description 140-160 caracteres",
-    "- cuerpo: parrafos separados por doble salto de linea, sin guiones ni asteriscos",
-    "- bullets_hechos: 4 a 6 items concisos",
+    "- cuerpo: MINIMO 4 parrafos de prosa corrida, separados por \\n\\n. SIN guiones, asteriscos, ni listas.",
+    "- bullets_hechos: 4 a 6 items concisos (esos SI pueden ser frases cortas separadas)",
   ]
     .filter(Boolean)
     .join("\n");
@@ -108,8 +114,8 @@ export async function generateArticleDraft(input: DraftInput) {
       { role: "system", content: system },
       { role: "user", content: user },
     ],
-    temperature: 0.35,
-    maxTokens: 2500,
+    temperature: 0.4,
+    maxTokens: 4000,
   });
 
   const content = getFirstAssistantContent(completion);
