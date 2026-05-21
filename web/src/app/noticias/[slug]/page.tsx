@@ -7,7 +7,6 @@ import { NewsImage } from "@/components/NewsImage";
 import { NewsCard } from "@/components/NewsCard";
 import { getAllNews, getDraftBySlug, getNewsBySlug } from "@/lib/content";
 import { normalizeSlug } from "@/lib/draft";
-import { getOgImageUrlForUrl } from "@/lib/exa";
 import { getSectionLabel } from "@/lib/sections";
 
 function formatDateTime(publishedAtIso: string) {
@@ -75,10 +74,7 @@ export default async function ArticlePage({
   const adsenseInlineSlot2 = process.env.NEXT_PUBLIC_ADSENSE_SLOT_INLINE_2 ?? "";
   const adsenseArticleSidebarSlot =
     process.env.NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_SIDEBAR ?? "";
-  const resolvedImageUrl =
-    draft?.image?.url ??
-    item.imageUrl ??
-    (await getOgImageUrlForUrl(item.sourceUrl).catch(() => undefined));
+  const resolvedImageUrl = draft?.image?.url ?? item.imageUrl;
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
