@@ -8,7 +8,7 @@ export type DraftInput = {
   url: string;
   hintTitle?: string;
   hintPublishedDate?: string;
-  /** Si se especifica, el LLM debe asignar este section key al artículo */
+  /** Si se especifica, el LLM debe asignar este section key al articulo */
   targetSection?: string;
 };
 
@@ -29,7 +29,8 @@ export async function generateArticleDraft(input: DraftInput) {
 
   const sectionsForModel = SECTIONS.filter((s) => s.key !== "partidos-y-fixture")
     .map((s) => `${s.key}: ${s.label}`)
-    .join("\n");
+    .join("
+");
 
   const system = [
     "Sos editor deportivo argentino senior (es-AR), estilo periodico deportivo de calidad.",
@@ -46,55 +47,15 @@ export async function generateArticleDraft(input: DraftInput) {
     "9. Incluye siempre la URL de la fuente en el objeto source.",
     "Salida: SOLO JSON valido sin markdown ni bloques de codigo.",
   ].join("
-");eateHash } from "crypto";
-import { getExaTextForUrl } from "@/lib/exa";
-import { isArticleDraft, normalizeSlug, tryParseJsonObject } from "@/lib/draft";
-import { getFirstAssistantContent, getLLMConfig, openRouterChatCompletion } from "@/lib/openrouter";
-import { SECTIONS } from "@/lib/sections";
+");
 
-export type DraftInput = {
-  url: string;
-  hintTitle?: string;
-  hintPublishedDate?: string;
-  /** Si se especifica, el LLM debe asignar este section key al artículo */
-  targetSection?: string;
-};
-
-function getDomain(url: string): string | undefined {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return undefined;
-  }
-}
-
-export async function generateArticleDraft(input: DraftInput) {
-  const sourceDomain = getDomain(input.url);
-  const contents = await getExaTextForUrl(input.url);
-
-  const sourceTitle = input.hintTitle ?? contents.title;
-  const sourcePublishedDate = input.hintPublishedDate ?? contents.publishedDate;
-
-  const sectionsForModel = SECTIONS.filter((s) => s.key !== "partidos-y-fixture")
-    .map((s) => `${s.key}: ${s.label}`)
-    .join("\n");
-
-  const system = [
-    "Sos editor deportivo argentino (es-AR), estilo periÃ³dico/canal de noticias.",
-    "Objetivo: redactar una nota original sobre el Mundial 2026 a partir de una fuente, sin copiar texto literal.",
-    "Reglas:",
-    "- No inventes datos. Si un dato no estÃ¡ en la fuente, no lo afirmes.",
-    "- No pegues pÃ¡rrafos de la fuente. ReescribÃ­ con tus palabras y sumÃ¡ contexto Ãºtil.",
-    "- MantenÃ© atribuciÃ³n: siempre incluir la URL de la fuente en el objeto source.",
-    "- PriorizÃ¡ claridad, titulares informativos y SEO sin clickbait.",
-    "Salida: SOLO un JSON vÃ¡lido (sin markdown) con la estructura pedida.",
-  ].join("\n");
+  const sectionInstruction = input.targetSection
+    ? `IMPORTANTE: Esta nota DEBE tener section = "${input.targetSection}". Redacta el contenido enfocado en ese angulo del Mundial 2026 usando la fuente como base.`
+    : "Elegi la section mas apropiada entre estas opciones (usar el key):";
 
   const user = [
-    "GenerÃ¡ un borrador para publicar en un sitio de noticias del Mundial 2026.",
-    input.targetSection
-      ? `IMPORTANTE: Esta nota DEBE tener section = "${input.targetSection}". RedactÃ¡ el contenido enfocado en ese Ã¡ngulo del Mundial 2026 usando la fuente como base.`
-      : "ElegÃ­ la section mÃ¡s apropiada entre estas opciones (usar el key):",
+    "Genera un borrador para publicar en un sitio de noticias del Mundial 2026.",
+    sectionInstruction,
     sectionsForModel,
     "",
     "Fuente:",
@@ -103,16 +64,16 @@ export async function generateArticleDraft(input: DraftInput) {
     sourceTitle ? `- title: ${sourceTitle}` : "",
     sourcePublishedDate ? `- publishedDate: ${sourcePublishedDate}` : "",
     "",
-    "Texto extraÃ­do (puede venir truncado):",
+    "Texto extraido (puede venir truncado):",
     contents.text ? contents.text.slice(0, 12000) : "",
     "",
     "JSON schema esperado:",
     JSON.stringify(
       {
-        headline: "string",
-        bajada: "string",
-        bullets_hechos: ["string"],
-        cuerpo: "string",
+        headline: "string (maximo 85 caracteres, informativo)",
+        bajada: "string (complementa el titular, no lo repite)",
+        bullets_hechos: ["string (dato concreto verificable de la fuente)"],
+        cuerpo: "string (prosa narrativa 4-6 parrafos, SIN bullet points)",
         section: "ultima-hora | selecciones | paises-anfitriones | estadios | jugadores | entradas",
         tags: ["string"],
         entities: {
@@ -121,11 +82,11 @@ export async function generateArticleDraft(input: DraftInput) {
           estadios: ["string"],
           paises: ["string"],
         },
-        seo: { title: "string", description: "string", slug: "string" },
+        seo: { title: "string (max 60 chars)", description: "string (140-160 chars)", slug: "string" },
         source: {
           url: "string",
           domain: "string",
-          publishedDate: "string",
+          publishedDate: "string (ISO 8601 o vacio)",
           title: "string",
         },
       },
@@ -133,15 +94,16 @@ export async function generateArticleDraft(input: DraftInput) {
       2,
     ),
     "",
-    "Requisitos SEO:",
+    "Requisitos:",
     "- headline <= 85 caracteres",
     "- seo.title <= 60 caracteres",
     "- seo.description 140-160 caracteres",
-    "- cuerpo 4 a 7 pÃ¡rrafos cortos",
-    "- bullets_hechos: 4 a 6 Ã­tems",
+    "- cuerpo: parrafos separados por doble salto de linea, sin guiones ni asteriscos",
+    "- bullets_hechos: 4 a 6 items concisos",
   ]
     .filter(Boolean)
-    .join("\n");
+    .join("
+");
 
   const completion = await openRouterChatCompletion({
     model: process.env.OPENROUTER_MODEL ?? getLLMConfig().defaultModel,
@@ -163,7 +125,6 @@ export async function generateArticleDraft(input: DraftInput) {
     ...parsed,
     seo: {
       ...parsed.seo,
-      // Sufijo del hash de la URL garantiza unicidad aunque el LLM genere el mismo slug
       slug: `${normalizeSlug(parsed.seo.slug)}-${createHash("sha1").update(input.url).digest("hex").slice(0, 6)}`,
     },
     image: contents.imageUrl
@@ -182,4 +143,3 @@ export async function generateArticleDraft(input: DraftInput) {
     },
   };
 }
-
