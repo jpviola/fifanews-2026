@@ -4,11 +4,16 @@ import type { NewsItem } from "@/lib/sample-data";
 import { NewsImage } from "@/components/NewsImage";
 
 function formatDateTime(publishedAtIso: string) {
-  const date = new Date(publishedAtIso);
-  return new Intl.DateTimeFormat("es-AR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
+  try {
+    const date = new Date(publishedAtIso);
+    if (isNaN(date.getTime())) return "";
+    return new Intl.DateTimeFormat("es-AR", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(date);
+  } catch {
+    return "";
+  }
 }
 
 export function NewsCard({ item }: { item: NewsItem }) {

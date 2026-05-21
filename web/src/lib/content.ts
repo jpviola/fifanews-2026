@@ -18,7 +18,7 @@ function draftToNewsItem(d: ArticleDraft): NewsItem | null {
   try {
     if (!d || !d.source?.url || !d.seo?.slug || !d.headline) return null;
     const domain = d.source.domain ?? "Fuente";
-    const publishedAtIso = d.source.publishedDate ?? new Date().toISOString();
+    const publishedAtIso = d.source.publishedDate || new Date().toISOString();
     return {
       id: `draft_${idFromUrl(d.source.url)}`,
       title: d.headline,
