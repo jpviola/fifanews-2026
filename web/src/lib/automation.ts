@@ -195,11 +195,24 @@ export async function runDailyAutomation(input: DailyRunInput) {
       ? uniqueUrls.filter((u) => !knownUrls.has(u))
       : uniqueUrls;
 
+  // Distribuye sections de forma rotatoria para asegurar diversidad de contenido
+  const SECTION_ROTATION = [
+    "ultima-hora",
+    "selecciones",
+    "estadios",
+    "jugadores",
+    "entradas",
+    "paises-anfitriones",
+    "ultima-hora",
+    "selecciones",
+  ] as const;
+
   const draftResults = await runWithConcurrency(
     urlsToProcess,
     concurrency,
-    async (url) => {
-      return await generateArticleDraft({ url });
+    async (url, idx) => {
+      const targetSection = SECTION_ROTATION[idx % SECTION_ROTATION.length];
+      return await generateArticleDraft({ url, targetSection });
     },
   );
 

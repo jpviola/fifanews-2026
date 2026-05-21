@@ -8,6 +8,8 @@ export type DraftInput = {
   url: string;
   hintTitle?: string;
   hintPublishedDate?: string;
+  /** Si se especifica, el LLM debe asignar este section key al art�culo */
+  targetSection?: string;
 };
 
 function getDomain(url: string): string | undefined {
@@ -42,7 +44,9 @@ export async function generateArticleDraft(input: DraftInput) {
 
   const user = [
     "Generá un borrador para publicar en un sitio de noticias del Mundial 2026.",
-    "Elegí section entre estas opciones (usar el key):",
+    input.targetSection
+      ? `IMPORTANTE: Esta nota DEBE tener section = "${input.targetSection}". Redactá el contenido enfocado en ese ángulo del Mundial 2026 usando la fuente como base.`
+      : "Elegí la section más apropiada entre estas opciones (usar el key):",
     sectionsForModel,
     "",
     "Fuente:",
