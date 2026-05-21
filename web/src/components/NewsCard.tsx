@@ -10,6 +10,10 @@ function proxyUrl(src: string) {
   return `/api/img?url=${encodeURIComponent(src)}`;
 }
 
+function ogFallbackUrl(pageUrl: string) {
+  return `/api/og-img?page=${encodeURIComponent(pageUrl)}`;
+}
+
 function formatDate(iso: string) {
   try {
     const d = new Date(iso);
@@ -18,9 +22,29 @@ function formatDate(iso: string) {
   } catch { return ""; }
 }
 
-function CardImage({ src, alt }: { src: string; alt: string }) {
+function CardImage({
+  src,
+  alt,
+  sourceUrl,
+}: {
+  src: string;
+  alt: string;
+  sourceUrl?: string;
+}) {
   const [failed, setFailed] = useState(false);
-  if (failed || !src) {
+  const [triedOg, setTriedOg] = useState(false);
+
+  const primarySrc = src ? proxyUrl(src) : undefined;
+  const ogSrc = sourceUrl ? ogFallbackUrl(sourceUrl) : undefined;
+
+  const currentSrc =
+    !failed && primarySrc
+      ? primarySrc
+      : !triedOg && ogSrc
+        ? ogSrc
+        : undefined;
+
+  if (!currentSrc) {
     return (
       <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#1a237e]/10 via-zinc-100 to-zinc-200">
         <span className="text-4xl opacity-20">MX2026</span>
@@ -29,11 +53,17 @@ function CardImage({ src, alt }: { src: string; alt: string }) {
   }
   return (
     <img
-      src={proxyUrl(src)}
+      src={currentSrc}
       alt={alt}
       className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
       loading="lazy"
-      onError={() => setFailed(true)}
+      onError={() => {
+        if (!failed) {
+          setFailed(true);
+        } else {
+          setTriedOg(true);
+        }
+      }}
     />
   );
 }
@@ -47,7 +77,7 @@ export function NewsCard({ item }: { item: NewsItem }) {
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-200/70 bg-white shadow-sm hover:shadow-md transition-shadow">
       <Link href={`/noticias/${item.slug}`} className="relative block aspect-video w-full overflow-hidden bg-zinc-100">
-        <CardImage src={item.imageUrl ?? ""} alt={item.title} />
+        <CardImage src={item.imageUrl ?? ""} alt={item.title} sourceUrl={item.sourceUrl} />
         <span
           className={`absolute left-3 top-3 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide ${
             isHot
@@ -85,7 +115,7 @@ export function NewsCardHorizontal({ item }: { item: NewsItem }) {
   return (
     <article className="group flex gap-3 rounded-xl border border-zinc-200/70 bg-white p-3 shadow-sm hover:shadow-md transition-shadow">
       <Link href={`/noticias/${item.slug}`} className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-zinc-100">
-        <CardImage src={item.imageUrl ?? ""} alt={item.title} />
+        <CardImage src={item.imageUrl ?? ""} alt={item.title} sourceUrl={item.sourceUrl} />
       </Link>
       <div className="flex min-w-0 flex-col justify-between">
         <div>

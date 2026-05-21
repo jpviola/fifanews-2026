@@ -69,7 +69,12 @@ export default async function ArticlePage({
     : item.facts?.length
       ? item.facts
       : fallbackFacts;
-  const bodyToRender = draft?.cuerpo || item.body || item.excerpt;
+  const rawBody = draft?.cuerpo || item.body || item.excerpt;
+  // Strip bullet-point markers (- * 1.) from existing articles generated before the prompt fix
+  const bodyToRender = rawBody
+    .split("\n")
+    .map((line: string) => line.replace(/^\s*[-*]\s+/, "").replace(/^\s*\d+[.)]\s+/, ""))
+    .join("\n");
   const adsenseInlineSlot = process.env.NEXT_PUBLIC_ADSENSE_SLOT_INLINE ?? "";
   const adsenseInlineSlot2 = process.env.NEXT_PUBLIC_ADSENSE_SLOT_INLINE_2 ?? "";
   const adsenseArticleSidebarSlot =

@@ -23,8 +23,10 @@ function formatDate(iso: string) {
 
 export default async function Home() {
   const sorted = await getAllNews();
-  const hero = sorted[0];
-  const rest = sorted.slice(1);
+  // Pick the most recent article that HAS an image for the hero
+  const heroIdx = sorted.findIndex((n) => n.imageUrl);
+  const hero = heroIdx >= 0 ? sorted[heroIdx] : sorted[0];
+  const rest = sorted.filter((_, i) => i !== heroIdx);
 
   const hotItems = sorted
     .filter((n) => n.section === "ultima-hora")
@@ -63,7 +65,7 @@ export default async function Home() {
           className="group relative block w-full overflow-hidden rounded-2xl bg-zinc-900 shadow-lg"
           style={{ minHeight: "420px" }}
         >
-          <HeroImage src={hero.imageUrl} />
+          <HeroImage src={hero.imageUrl} sourceUrl={hero.sourceUrl} />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
           <div className="relative flex h-full min-h-[420px] flex-col justify-end p-6 sm:p-8">
             <span className={`mb-3 inline-block self-start rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${

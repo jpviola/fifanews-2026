@@ -99,8 +99,8 @@ async function getOpenGraphImageUrl(pageUrl: string): Promise<string | undefined
       method: "GET",
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; fifaWorldCup-news/1.0; +https://copamundial.today/)",
-        Accept: "text/html,application/xhtml+xml",
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       },
       signal: controller.signal,
       redirect: "follow",
