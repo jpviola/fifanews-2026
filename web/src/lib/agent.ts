@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { getExaTextForUrl } from "@/lib/exa";
 import { isArticleDraft, normalizeSlug, tryParseJsonObject } from "@/lib/draft";
 import { getFirstAssistantContent, getLLMConfig, openRouterChatCompletion } from "@/lib/openrouter";
@@ -110,7 +111,8 @@ export async function generateArticleDraft(input: DraftInput) {
     ...parsed,
     seo: {
       ...parsed.seo,
-      slug: normalizeSlug(parsed.seo.slug),
+      // Sufijo del hash de la URL garantiza unicidad aunque el LLM genere el mismo slug
+      slug: `${normalizeSlug(parsed.seo.slug)}-${createHash("sha1").update(input.url).digest("hex").slice(0, 6)}`,
     },
     image: contents.imageUrl
       ? {
