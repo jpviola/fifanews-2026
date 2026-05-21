@@ -2,18 +2,44 @@ import { NextResponse } from "next/server";
 
 import { listRunLogs } from "@/lib/local-store";
 
-// Endpoint público (sin auth) para diagnosticar el estado del sistema
 export async function GET() {
   const hasDb = Boolean(
     process.env.DATABASE_URL ||
     process.env.POSTGRES_URL ||
     process.env.POSTGRES_PRISMA_URL,
   );
-  const hasOpenRouter = Boolean(process.env.OPENROUTER_API_KEY);
+  const hasOpenRouter = Boolean((process.env.OPENROUTER_API_KEY ?? "").trim());
+  const hasGroq = Boolean((process.env.GROQ_API_KEY ?? "").trim());
   const hasExa = Boolean(process.env.EXA_API_KEY);
   const hasCronSecret = Boolean(process.env.CRON_SECRET);
 
-  let lastRun: { startedAt: string; draftsGenerated: number; storedCount: number; errors: number } | null = null;
+  // Mostrar qué provider y modelo va a usar realmente el código
+  let activeLLM: { provider: string; model: string; baseUrl: string } | null = null;
+  try {
+    const groqKey = (process.env.GROQ_API_KEY ?? "").trim();
+    if (groqKey) {
+      activeLLM = {
+        provider: "groq",
+        model: process.env.OPENROUTER_MODEL ?? "llama-3.3-70b-versatile",
+        baseUrl: "https://api.groq.com/openai/v1",
+      };
+    } else if ((process.env.OPENROUTER_API_KEY ?? "").trim()) {
+      activeLLM = {
+        provider: "openrouter",
+        model: process.env.OPENROUTER_MODEL ?? "deepseek/deepseek-chat-v3-0324:free",
+        baseUrl: "https://openrouter.ai/api/v1",
+      };
+    }
+  } catch {
+    activeLLM = null;
+  }
+
+  let lastRun: {
+    startedAt: string;
+    draftsGenerated: number;
+    storedCount: number;
+    errors: number;
+  } | null = null;
   let dbError: string | null = null;
 
   if (hasDb) {
@@ -33,12 +59,14 @@ export async function GET() {
     }
   }
 
-  const ready = hasDb && hasOpenRouter && (hasExa || true /* RSS always available */);
+  const ready = hasDb && (hasGroq || hasOpenRouter);
 
   return NextResponse.json({
     ready,
+    activeLLM,
     config: {
       hasDb,
+      hasGroq,
       hasOpenRouter,
       hasExa,
       hasCronSecret,
@@ -47,12 +75,5 @@ export async function GET() {
     lastCronRun: lastRun,
     dbError,
     cronSchedule: "0 12 * * * (12:00 UTC diario)",
-    tip: !hasDb
-      ? "Configurá DATABASE_URL en Vercel (Vercel Postgres o Supabase)"
-      : !hasOpenRouter
-        ? "Configurá OPENROUTER_API_KEY en Vercel"
-        : lastRun === null
-          ? "El cron no ha corrido todavía. Disparalo manualmente: POST /api/automation/daily/run con OPS_TOKEN"
-          : "Sistema operativo",
   });
 }
