@@ -124,13 +124,11 @@ export default async function ArticlePage({
           </div>
         ) : null}
 
-        <div className="mt-6 rounded-xl border border-zinc-200/70 bg-white/70 p-4">
+        <div className="mt-6 rounded-xl border border-zinc-200/70 bg-white/70 p-5">
           <div className="text-sm font-semibold text-zinc-950">Claves de la nota</div>
-          <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-7 text-zinc-700">
-            {factsToRender.map((b) => (
-              <li key={b}>{b}</li>
-            ))}
-          </ul>
+          <p className="mt-3 text-sm leading-7 text-zinc-700">
+            {factsToRender.join(". ").replace(/\.\./g, ".").replace(/\.\s*$/, "")}.
+          </p>
         </div>
         <div className="mt-6 space-y-4 text-sm leading-7 text-zinc-700">
           {bodyToRender
