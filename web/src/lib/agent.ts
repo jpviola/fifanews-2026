@@ -14,7 +14,7 @@ export type DraftInput = {
 
 function getDomain(url: string): string | undefined {
   try {
-    return new URL(url).hostname.replace(/^www\./, "");
+    return new URL(url).hostname.replace(/^www./, "");
   } catch {
     return undefined;
   }
@@ -29,8 +29,7 @@ export async function generateArticleDraft(input: DraftInput) {
 
   const sectionsForModel = SECTIONS.filter((s) => s.key !== "partidos-y-fixture")
     .map((s) => `${s.key}: ${s.label}`)
-    .join("
-");
+    .join("\n");
 
   const system = [
     "Sos editor deportivo argentino senior (es-AR), estilo periodico deportivo de calidad.",
@@ -46,8 +45,7 @@ export async function generateArticleDraft(input: DraftInput) {
     "8. No inventes datos que no esten en la fuente.",
     "9. Incluye siempre la URL de la fuente en el objeto source.",
     "Salida: SOLO JSON valido sin markdown ni bloques de codigo.",
-  ].join("
-");
+  ].join("\n");
 
   const sectionInstruction = input.targetSection
     ? `IMPORTANTE: Esta nota DEBE tener section = "${input.targetSection}". Redacta el contenido enfocado en ese angulo del Mundial 2026 usando la fuente como base.`
@@ -73,7 +71,7 @@ export async function generateArticleDraft(input: DraftInput) {
         headline: "string (maximo 85 caracteres, informativo)",
         bajada: "string (complementa el titular, no lo repite)",
         bullets_hechos: ["string (dato concreto verificable de la fuente)"],
-        cuerpo: "string (prosa narrativa 4-6 parrafos, SIN bullet points)",
+        cuerpo: "string (prosa narrativa 4-6 parrafos, SIN bullet points ni guiones)",
         section: "ultima-hora | selecciones | paises-anfitriones | estadios | jugadores | entradas",
         tags: ["string"],
         entities: {
@@ -102,8 +100,7 @@ export async function generateArticleDraft(input: DraftInput) {
     "- bullets_hechos: 4 a 6 items concisos",
   ]
     .filter(Boolean)
-    .join("
-");
+    .join("\n");
 
   const completion = await openRouterChatCompletion({
     model: process.env.OPENROUTER_MODEL ?? getLLMConfig().defaultModel,
