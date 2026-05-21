@@ -53,15 +53,21 @@ export default async function SectionPage({
             </div>
           </div>
           <p className="mt-2 text-sm leading-6 text-zinc-700">
-            Listado editorial con foco en Mundial 2026. Esta vista es el wireframe
-            base; luego se conecta a EXA + base de datos.
+            Últimas noticias de {label} para el Mundial 2026.
           </p>
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-4">
-          {items.map((item) => (
-            <NewsCard key={item.id} item={item} />
-          ))}
+          {items.length > 0 ? (
+            items.map((item) => (
+              <NewsCard key={item.id} item={item} />
+            ))
+          ) : (
+            <div className="rounded-2xl border border-zinc-200/70 bg-white/75 p-8 text-center shadow-sm backdrop-blur">
+              <p className="text-zinc-500">Todavía no hay artículos en esta sección.</p>
+              <p className="mt-1 text-sm text-zinc-400">El cron de noticias se ejecuta diariamente y pronto habrá contenido aquí.</p>
+            </div>
+          )}
         </div>
       </div>
 

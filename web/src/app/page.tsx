@@ -7,6 +7,7 @@ import { HotTicker } from "@/components/HotTicker";
 import { NewsCard } from "@/components/NewsCard";
 import { TopCarousel } from "@/components/TopCarousel";
 import { getAllNews } from "@/lib/content";
+import { NewsImage } from "@/components/NewsImage";
 import { SAMPLE_FIXTURE } from "@/lib/sample-data";
 import { getSectionLabel } from "@/lib/sections";
 
@@ -79,11 +80,11 @@ if (!hero) {    return (      <div className="flex flex-col gap-8">        <Brea
             </p>
             <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200/70 bg-gradient-to-br from-zinc-50 via-white to-zinc-100">
               {heroImage ? (
-                <img
-                  src={toProxyImageUrl(heroImage)}
+                <NewsImage
+                  src={heroImage}
                   alt=""
-                  className="h-56 w-full object-cover sm:h-64"
-                  loading="lazy"
+                  containerClassName="h-56 w-full sm:h-64"
+                  imgClassName="h-full w-full object-cover"
                 />
               ) : (
                 <div className="h-56 w-full sm:h-64" />
