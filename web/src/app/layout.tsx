@@ -17,6 +17,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Publisher ID hardcodeado: es información pública (está en ads.txt) y debe
+// estar siempre en el HTML para que Google AdSense pueda verificar el sitio,
+// independientemente de si NEXT_PUBLIC_ADSENSE_CLIENT está seteado al build.
+const ADSENSE_PUBLISHER_ID = "ca-pub-1971729858495340";
+
 export const metadata: Metadata = {
   title: {
     default: "Mundial 2026 | Noticias, selecciones, estadios y fixture",
@@ -24,6 +29,10 @@ export const metadata: Metadata = {
   },
   description:
     "Noticias del Mundial 2026: selecciones, países anfitriones, estadios, jugadores, entradas y fixture.",
+  other: {
+    // Requerido por AdSense para verificación del sitio
+    "google-adsense-account": ADSENSE_PUBLISHER_ID,
+  },
 };
 
 export default function RootLayout({
@@ -31,7 +40,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? "";
+  const adsenseClient =
+    (process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? "").trim() || ADSENSE_PUBLISHER_ID;
   const adsenseHeaderSlot = process.env.NEXT_PUBLIC_ADSENSE_SLOT_HEADER ?? "";
   const gamEnabled = Boolean(process.env.NEXT_PUBLIC_GAM_NETWORK_CODE);
   return (
@@ -39,20 +49,13 @@ export default function RootLayout({
       lang="es-AR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <head>
-        {adsenseClient ? (
-          <meta name="google-adsense-account" content={adsenseClient} />
-        ) : null}
-      </head>
       <body className="min-h-full premium-bg text-zinc-900">
-        {adsenseClient ? (
-          <Script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
-            crossOrigin="anonymous"
-            strategy="afterInteractive"
-          />
-        ) : null}
+        <Script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         {gamEnabled ? (
           <Script
             async
@@ -61,7 +64,7 @@ export default function RootLayout({
           />
         ) : null}
         <div className="min-h-full">
-          {adsenseClient && adsenseHeaderSlot ? (
+          {adsenseHeaderSlot ? (
             <div className="sticky top-0 z-50 border-b border-zinc-200/70 bg-white/90 backdrop-blur">
               <div className="mx-auto w-full max-w-6xl px-4 py-2">
                 <AdSlot
