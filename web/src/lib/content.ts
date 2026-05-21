@@ -60,7 +60,7 @@ export async function getNewsBySlug(slug: string): Promise<NewsItem | undefined>
   noStore();
   const published = await fetchPublished();
   const match = published.find((d) => d.seo.slug === slug);
-  if (match) return draftToNewsItem(match);
+  if (match) return draftToNewsItem(match) ?? undefined;
 
   // Fallback a sample solo si no hay artículos reales
   if (published.length === 0) return getSampleNewsBySlug(slug);
