@@ -17,7 +17,7 @@ export async function generateMetadata({
   const label = getSectionLabel(seccion);
   return {
     title: label,
-    description: `Ãšltimas noticias de ${label} del Mundial 2026.`,
+    description: `Ultimas noticias de ${label} del Mundial 2026.`,
   };
 }
 
@@ -39,56 +39,46 @@ export default async function SectionPage({
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <div className="lg:col-span-2">
-        <div className="rounded-2xl border border-zinc-200/70 bg-white/75 p-5 shadow-sm backdrop-blur">
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-950">
-              {label}
-            </h1>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-zinc-500">Orden:</span>
-              <span className="rounded-full bg-zinc-100 px-3 py-1 text-zinc-700">
-                MÃ¡s reciente
-              </span>
-            </div>
+      <div className="lg:col-span-2 space-y-6">
+        <div className="rounded-2xl border border-zinc-200/70 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-6 w-1 rounded-full bg-[#ff6d00]" />
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-950">{label}</h1>
           </div>
-          <p className="mt-2 text-sm leading-6 text-zinc-700">
-            Últimas noticias de {label} para el Mundial 2026.
+          <p className="mt-2 text-sm leading-6 text-zinc-500">
+            Ultimas noticias de {label} para el Mundial 2026.
           </p>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-4">
-          {items.length > 0 ? (
-            items.map((item) => (
+        {items.length > 0 ? (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            {items.map((item) => (
               <NewsCard key={item.id} item={item} />
-            ))
-          ) : (
-            <div className="rounded-2xl border border-zinc-200/70 bg-white/75 p-8 text-center shadow-sm backdrop-blur">
-              <p className="text-zinc-500">Todavía no hay artículos en esta sección.</p>
-              <p className="mt-1 text-sm text-zinc-400">El cron de noticias se ejecuta diariamente y pronto habrá contenido aquí.</p>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-zinc-200/70 bg-white p-10 text-center shadow-sm">
+            <p className="text-zinc-500 font-medium">Sin articulos en esta seccion todavia.</p>
+            <p className="mt-1 text-sm text-zinc-400">
+              El cron de noticias se ejecuta diariamente y pronto habra contenido aqui.
+            </p>
+          </div>
+        )}
       </div>
 
       <aside className="space-y-6 lg:col-span-1">
-        <FixtureWidget title="PrÃ³ximos partidos" items={SAMPLE_FIXTURE.slice(0, 3)} />
-        <div className="rounded-xl border border-zinc-200/70 bg-white/75 p-4 shadow-sm backdrop-blur">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-semibold text-zinc-950">Lo mÃ¡s leÃ­do</h2>
-            <Link href="/" className="text-sm text-zinc-700 hover:underline">
-              Portada
-            </Link>
-          </div>
-          <ol className="mt-3 space-y-3">
+        <FixtureWidget title="Proximos partidos" items={SAMPLE_FIXTURE.slice(0, 3)} />
+        <div className="rounded-xl border border-zinc-200/70 bg-white p-4 shadow-sm">
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-zinc-500">Lo mas leido</h2>
+          <ol className="space-y-3">
             {mostRead.map((item, idx) => (
               <li key={item.id} className="flex gap-3">
-                <span className="mt-0.5 w-6 shrink-0 text-right text-xs font-semibold text-zinc-400">
+                <span className="mt-0.5 w-6 shrink-0 text-right text-xs font-black text-zinc-200">
                   {idx + 1}
                 </span>
                 <Link
                   href={`/noticias/${item.slug}`}
-                  className="line-clamp-2 text-sm font-medium text-zinc-900 hover:underline"
+                  className="line-clamp-2 text-sm font-semibold text-zinc-900 hover:text-[#1a237e] transition-colors"
                 >
                   {item.title}
                 </Link>

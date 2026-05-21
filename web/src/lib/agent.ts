@@ -8,7 +8,7 @@ export type DraftInput = {
   url: string;
   hintTitle?: string;
   hintPublishedDate?: string;
-  /** Si se especifica, el LLM debe asignar este section key al art�culo */
+  /** Si se especifica, el LLM debe asignar este section key al artículo */
   targetSection?: string;
 };
 
@@ -32,21 +32,21 @@ export async function generateArticleDraft(input: DraftInput) {
     .join("\n");
 
   const system = [
-    "Sos editor deportivo argentino (es-AR), estilo periódico/canal de noticias.",
+    "Sos editor deportivo argentino (es-AR), estilo periÃ³dico/canal de noticias.",
     "Objetivo: redactar una nota original sobre el Mundial 2026 a partir de una fuente, sin copiar texto literal.",
     "Reglas:",
-    "- No inventes datos. Si un dato no está en la fuente, no lo afirmes.",
-    "- No pegues párrafos de la fuente. Reescribí con tus palabras y sumá contexto útil.",
-    "- Mantené atribución: siempre incluir la URL de la fuente en el objeto source.",
-    "- Priorizá claridad, titulares informativos y SEO sin clickbait.",
-    "Salida: SOLO un JSON válido (sin markdown) con la estructura pedida.",
+    "- No inventes datos. Si un dato no estÃ¡ en la fuente, no lo afirmes.",
+    "- No pegues pÃ¡rrafos de la fuente. ReescribÃ­ con tus palabras y sumÃ¡ contexto Ãºtil.",
+    "- MantenÃ© atribuciÃ³n: siempre incluir la URL de la fuente en el objeto source.",
+    "- PriorizÃ¡ claridad, titulares informativos y SEO sin clickbait.",
+    "Salida: SOLO un JSON vÃ¡lido (sin markdown) con la estructura pedida.",
   ].join("\n");
 
   const user = [
-    "Generá un borrador para publicar en un sitio de noticias del Mundial 2026.",
+    "GenerÃ¡ un borrador para publicar en un sitio de noticias del Mundial 2026.",
     input.targetSection
-      ? `IMPORTANTE: Esta nota DEBE tener section = "${input.targetSection}". Redactá el contenido enfocado en ese ángulo del Mundial 2026 usando la fuente como base.`
-      : "Elegí la section más apropiada entre estas opciones (usar el key):",
+      ? `IMPORTANTE: Esta nota DEBE tener section = "${input.targetSection}". RedactÃ¡ el contenido enfocado en ese Ã¡ngulo del Mundial 2026 usando la fuente como base.`
+      : "ElegÃ­ la section mÃ¡s apropiada entre estas opciones (usar el key):",
     sectionsForModel,
     "",
     "Fuente:",
@@ -55,7 +55,7 @@ export async function generateArticleDraft(input: DraftInput) {
     sourceTitle ? `- title: ${sourceTitle}` : "",
     sourcePublishedDate ? `- publishedDate: ${sourcePublishedDate}` : "",
     "",
-    "Texto extraído (puede venir truncado):",
+    "Texto extraÃ­do (puede venir truncado):",
     contents.text ? contents.text.slice(0, 12000) : "",
     "",
     "JSON schema esperado:",
@@ -89,8 +89,8 @@ export async function generateArticleDraft(input: DraftInput) {
     "- headline <= 85 caracteres",
     "- seo.title <= 60 caracteres",
     "- seo.description 140-160 caracteres",
-    "- cuerpo 4 a 7 párrafos cortos",
-    "- bullets_hechos: 4 a 6 ítems",
+    "- cuerpo 4 a 7 pÃ¡rrafos cortos",
+    "- bullets_hechos: 4 a 6 Ã­tems",
   ]
     .filter(Boolean)
     .join("\n");

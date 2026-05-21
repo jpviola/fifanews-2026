@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { useState } from "react";
 
 import { BreakingBanner } from "@/components/BreakingBanner";
 import { FixtureWidget } from "@/components/FixtureWidget";
